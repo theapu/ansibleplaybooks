@@ -10,18 +10,22 @@
             upgrade: true
             update_cache: yes
           register: output1
+          
         - name: Update pihole
           when: inventory_hostname in groups['piholes']
           command: pihole -up
           register: output2
+          
         - name: Check if reboot required
           stat:
             path: /var/run/reboot-required
           register: reboot_required_file
+          
         - name: Reboot if required
           when: reboot_required_file.stat.exists == true
           reboot:
           register: output3
+          
         - name: Sending an e-mail if rebooted
           become: no
           when: reboot_required_file.stat.exists == false and inventory_hostname in
@@ -36,6 +40,7 @@
             body: Rebooted system "{{ ansible_hostname }}".
           delegate_to: 127.0.0.1
           register: output4
+          
         - name: Sending an e-mail if reboot needed
           become: no
           when: reboot_required_file.stat.exists == false and inventory_hostname in
