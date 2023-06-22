@@ -7,12 +7,12 @@
       apt: 
         upgrade: true
         update_cache: yes
-      register: output
+      register: output1
       
     - name: Update pihole
       when: inventory_hostname in groups['piholes']
       command: "pihole -up"
-      register: output
+      register: output2
       
     - name: Check if reboot required
       stat:
@@ -35,7 +35,7 @@
         subject: Server Rebooted - Ansible 
         body: Rebooted system "{{ ansible_hostname }}".
       delegate_to: 127.0.0.1
-      register: output
+      register: output3
       
     - name: Sending an e-mail if reboot needed
       become: no
@@ -49,9 +49,13 @@
         subject: Server Reboot requited - Ansible 
         body: Reboot requied for system "{{ ansible_hostname }}".
       delegate_to: 127.0.0.1
-      register: output
+      register: output4
 
     - name: Show debug messages
       debug:
-        msg: "{{ item.stdout }}"
-      with_items: output.results
+        msg: "{{ item }}"
+      with_items:
+        - "{{ output1 }}"
+        - "{{ output2 }}"
+        - "{{ output3 }}"
+        - "{{ output4 }}"
