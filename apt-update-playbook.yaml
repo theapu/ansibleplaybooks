@@ -28,6 +28,7 @@
       register: reboot_required_file
       
     - name: Sending an e-mail if reboot needed
+      become: no
       when: reboot_required_file.stat.exists == false
       mail:
         host: "{{ var_gmail_smtp_server }}"
