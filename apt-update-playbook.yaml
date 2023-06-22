@@ -8,11 +8,15 @@
         upgrade: true
         update_cache: yes
       register: output
+      debug:
+        msg: "{{ output }}"
       
     - name: Update pihole
       when: inventory_hostname in groups['piholes']
       command: "pihole -up"
       register: output
+      debug:
+        msg: "{{ output }}"
       
     - name: Check if reboot required
       stat:
@@ -22,6 +26,3 @@
     - name: Reboot if required
       reboot:
       when: reboot_required_file.stat.exists == true
-      
-    - debug:
-       msg: "{{ output }}"
