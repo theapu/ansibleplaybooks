@@ -39,3 +39,8 @@
         subject: Server Reboot requited - Ansible 
         body: Reboot requied for systems "{{ ansible_hostname }}".
       delegate_to: 127.0.0.1
+      register: output
+
+    - name: Sending an e-mail if reboot needed debug
+      debug:
+        msg: "{{ output }}"
