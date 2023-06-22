@@ -76,7 +76,7 @@
             password: "{{ var_gmail_password }}"
             to: "{{ var_gmail_receiver }}"
             subject: Ansible task failed
-            body: Ansible task failed "{{ inventory_hostname }}" - "{{ ansible_failed_result }}".
+            body: Ansible task failed "{{ inventory_hostname }}" - "{{ ansible_failed_task }}".
           delegate_to: 127.0.0.1
           register: output5
       always:
