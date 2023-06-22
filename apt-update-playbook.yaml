@@ -8,28 +8,38 @@
         upgrade: true
         update_cache: yes
       register: output
-
-    - name: Update apt package debug
-      debug:
-        msg: "{{ output }}"
       
     - name: Update pihole
       when: inventory_hostname in groups['piholes']
       command: "pihole -up"
       register: output
-
-    - name: Update pihole debug
-      debug:
-        msg: "{{ output }}"
       
     - name: Check if reboot required
       stat:
         path: /var/run/reboot-required
       register: reboot_required_file
+
+    - name: Reboot if required
+        when: reboot_required_file.stat.exists == true
+        reboot:
+
+    - name: Sending an e-mail if rebooted
+      become: no
+      when: reboot_required_file.stat.exists == false and inventory_hostname in groups['piholes']
+      mail:
+        host: "{{ var_gmail_smtp_server }}"
+        port: "{{ var_gmail_smtp_port }}"
+        username: "{{ var_gmail_sender }}"
+        password: "{{ var_gmail_password }}"
+        to: "{{ var_gmail_receiver }}"
+        subject: Server Rebooted - Ansible 
+        body: Rebooted system "{{ ansible_hostname }}".
+      delegate_to: 127.0.0.1
+      register: output
       
     - name: Sending an e-mail if reboot needed
       become: no
-      when: reboot_required_file.stat.exists == false
+      when: reboot_required_file.stat.exists == false and inventory_hostname in groups['proxmox']
       mail:
         host: "{{ var_gmail_smtp_server }}"
         port: "{{ var_gmail_smtp_port }}"
@@ -37,10 +47,11 @@
         password: "{{ var_gmail_password }}"
         to: "{{ var_gmail_receiver }}"
         subject: Server Reboot requited - Ansible 
-        body: Reboot requied for systems "{{ ansible_hostname }}".
+        body: Reboot requied for system "{{ ansible_hostname }}".
       delegate_to: 127.0.0.1
       register: output
 
-    - name: Sending an e-mail if reboot needed debug
+    - name: Show debug messages
       debug:
-        msg: "{{ output }}"
+        msg: "{{ item }}"
+      with_items: output.results
