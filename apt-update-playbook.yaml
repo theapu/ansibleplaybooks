@@ -11,7 +11,7 @@
 
     - name: Update apt packages check
       become: no
-      when: {{ taskresults is failed }}
+      when: "{{ taskresults is failed }}"
       mail:
         host: "{{ var_gmail_smtp_server }}"
         port: "{{ var_gmail_smtp_port }}"
