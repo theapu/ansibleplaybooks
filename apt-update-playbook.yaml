@@ -53,9 +53,7 @@
 
     - name: Show debug messages
       debug:
-        msg: "{{ item.stdout }}\n{{ item.stdout }}"
+        msg: "{{ item }}"
       with_items:
         - "{{ output1 }}"
-        - "{{ output2 }}"
-        - "{{ output3 }}"
-        - "{{ output4 }}"
+
