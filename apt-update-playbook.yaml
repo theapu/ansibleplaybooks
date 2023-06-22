@@ -53,7 +53,7 @@
 
     - name: Show debug messages
       debug:
-        when: "{{ item.stdout }}" | length > 0 and "{{ item.stderr }}" | length > 0
+        when: item.stdout is defined and item.stderr is defined 
         msg: "{{ item.stdout }}\nError: {{ item.stderr }}"
       with_items:
         - "{{ output1 }}"
