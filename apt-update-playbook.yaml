@@ -22,14 +22,13 @@
           register: reboot_required_file
           
         - name: Reboot if required
-          when: reboot_required_file.stat.exists == false
+          when: reboot_required_file.stat.exists == true and inventory_hostname in groups['piholes']
           reboot:
           register: output3
           
         - name: Sending an e-mail if rebooted
           become: no
-          when: reboot_required_file.stat.exists == false and inventory_hostname in
-            groups['piholes']
+          when: reboot_required_file.stat.exists == true and inventory_hostname in groups['piholes']
           mail:
             host: "{{ var_gmail_smtp_server }}"
             port: "{{ var_gmail_smtp_port }}"
@@ -43,8 +42,7 @@
           
         - name: Sending an e-mail if reboot needed
           become: no
-          when: reboot_required_file.stat.exists == false and inventory_hostname in
-            groups['proxmox']
+          when: reboot_required_file.stat.exists == true and inventory_hostname in groups['proxmox']
           mail:
             host: "{{ var_gmail_smtp_server }}"
             port: "{{ var_gmail_smtp_port }}"
@@ -55,6 +53,19 @@
             body: Reboot requied for system "{{ inventory_hostname }}".
           delegate_to: 127.0.0.1
           register: output5
+
+        - name: Sending an e-mail if tasks findished successfully
+          become: no
+          mail:
+            host: "{{ var_gmail_smtp_server }}"
+            port: "{{ var_gmail_smtp_port }}"
+            username: "{{ var_gmail_sender }}"
+            password: "{{ var_gmail_password }}"
+            to: "{{ var_gmail_receiver }}"
+            subject: Server Update success - Ansible
+            body: Server Update success for "{{ inventory_hostname }}".
+          delegate_to: 127.0.0.1
+          register: output6
       rescue:
         - name: Sending an e-mail if any task failed
           become: no
@@ -79,3 +90,4 @@
             - "{{ output3 }}"
             - "{{ output4 }}"
             - "{{ output5 }}"
+            - "{{ output6 }}"
