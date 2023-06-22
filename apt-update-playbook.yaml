@@ -53,5 +53,5 @@
 
     - name: Show debug messages
       debug:
-        msg: "{{ item }}"
+        msg: "{{ item.stdout }}"
       with_items: output.results
