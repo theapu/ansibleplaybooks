@@ -53,7 +53,7 @@
 
     - name: Show debug messages
       debug:
-        msg: "{{ item }}"
+        msg: "XXX"
       with_items:
         - "{{ output1 }}"
 
