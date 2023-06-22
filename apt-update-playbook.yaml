@@ -2,75 +2,77 @@
 - name: Update apt packages and pihole
   hosts: servers
   become: true
-  block:
-    - name: Update apt packages
-      apt: 
-        upgrade: true
-        update_cache: yes
-      register: output1
+  tasks:
+  - name: Handle the error
+    block:
+      - name: Update apt packages
+        apt: 
+          upgrade: true
+          update_cache: yes
+        register: output1
       
-    - name: Update pihole
-      when: inventory_hostname in groups['piholes']
-      command: "pihole -up"
-      register: output2
+      - name: Update pihole
+        when: inventory_hostname in groups['piholes']
+        command: "pihole -up"
+        register: output2
       
-    - name: Check if reboot required
-      stat:
-        path: /var/run/reboot-required
-      register: reboot_required_file
+      - name: Check if reboot required
+        stat:
+          path: /var/run/reboot-required
+        register: reboot_required_file
 
-    - name: Reboot if required
-      when: reboot_required_file.stat.exists == true
-      reboot:
-      register: output3
+      - name: Reboot if required
+        when: reboot_required_file.stat.exists == true
+        reboot:
+        register: output3
 
-    - name: Sending an e-mail if rebooted
-      become: no
-      when: reboot_required_file.stat.exists == false and inventory_hostname in groups['piholes']
-      mail:
-        host: "{{ var_gmail_smtp_server }}"
-        port: "{{ var_gmail_smtp_port }}"
-        username: "{{ var_gmail_sender }}"
-        password: "{{ var_gmail_password }}"
-        to: "{{ var_gmail_receiver }}"
-        subject: Server Rebooted - Ansible 
-        body: Rebooted system "{{ ansible_hostname }}".
-      delegate_to: 127.0.0.1
-      register: output4
+      - name: Sending an e-mail if rebooted
+        become: no
+        when: reboot_required_file.stat.exists == false and inventory_hostname in groups['piholes']
+        mail:
+          host: "{{ var_gmail_smtp_server }}"
+          port: "{{ var_gmail_smtp_port }}"
+          username: "{{ var_gmail_sender }}"
+          password: "{{ var_gmail_password }}"
+          to: "{{ var_gmail_receiver }}"
+          subject: Server Rebooted - Ansible 
+          body: Rebooted system "{{ ansible_hostname }}".
+        delegate_to: 127.0.0.1
+        register: output4
       
-    - name: Sending an e-mail if reboot needed
-      become: no
-      when: reboot_required_file.stat.exists == false and inventory_hostname in groups['proxmox']
-      mail:
-        host: "{{ var_gmail_smtp_server }}"
-        port: "{{ var_gmail_smtp_port }}"
-        username: "{{ var_gmail_sender }}"
-        password: "{{ var_gmail_password }}"
-        to: "{{ var_gmail_receiver }}"
-        subject: Server Reboot requited - Ansible 
-        body: Reboot requied for system "{{ inventory_hostname }}".
-      delegate_to: 127.0.0.1
-      register: output5      
-  rescue:
-    - name: Sending an e-mail if any task failed
-      become: no
-      mail:
-        host: "{{ var_gmail_smtp_server }}"
-        port: "{{ var_gmail_smtp_port }}"
-        username: "{{ var_gmail_sender }}"
-        password: "{{ var_gmail_password }}"
-        to: "{{ var_gmail_receiver }}"
-        subject: Ansible task failed 
-        body: Ansible task failed "{{ inventory_hostname }}" - "{{ ansible_failed_result }}".
-      delegate_to: 127.0.0.1
-      register: output5      
-  always:    
-    - name: Show debug messages
-      debug:
+      - name: Sending an e-mail if reboot needed
+        become: no
+        when: reboot_required_file.stat.exists == false and inventory_hostname in groups['proxmox']
+        mail:
+          host: "{{ var_gmail_smtp_server }}"
+          port: "{{ var_gmail_smtp_port }}"
+          username: "{{ var_gmail_sender }}"
+          password: "{{ var_gmail_password }}"
+          to: "{{ var_gmail_receiver }}"
+          subject: Server Reboot requited - Ansible 
+          body: Reboot requied for system "{{ inventory_hostname }}".
+        delegate_to: 127.0.0.1
+        register: output5      
+    rescue:
+      - name: Sending an e-mail if any task failed
+        become: no
+          mail:
+          host: "{{ var_gmail_smtp_server }}"
+          port: "{{ var_gmail_smtp_port }}"
+          username: "{{ var_gmail_sender }}"
+          password: "{{ var_gmail_password }}"
+          to: "{{ var_gmail_receiver }}"
+          subject: Ansible task failed 
+          body: Ansible task failed "{{ inventory_hostname }}" - "{{ ansible_failed_result }}".
+        delegate_to: 127.0.0.1
+        register: output5      
+    always:    
+      - name: Show debug messages
+        debug:
         msg: "{{ item }}"
-      with_items:
-        - "{{ output1 }}"
-        - "{{ output2 }}"
-        - "{{ output3 }}"
-        - "{{ output4 }}"
-        - "{{ output5 }}"
+        with_items:
+          - "{{ output1 }}"
+          - "{{ output2 }}"
+          - "{{ output3 }}"
+          - "{{ output4 }}"
+          - "{{ output5 }}"
