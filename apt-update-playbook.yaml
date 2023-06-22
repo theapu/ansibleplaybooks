@@ -67,7 +67,7 @@
       always:
         - name: Show debug messages
           debug: null
-          msg: "{{ item }}"
+            msg: "{{ item }}"
           with_items:
             - "{{ output1 }}"
             - "{{ output2 }}"
