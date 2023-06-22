@@ -20,8 +20,8 @@
       register: reboot_required_file
 
     - name: Reboot if required
-        when: reboot_required_file.stat.exists == true
-        reboot:
+      when: reboot_required_file.stat.exists == true
+      reboot:
 
     - name: Sending an e-mail if rebooted
       become: no
