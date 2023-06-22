@@ -3,11 +3,13 @@
   hosts: servers
   become: true
   tasks:
-    - name: update apt packages
+    - name: Update apt packages
       apt: 
         upgrade: true
         update_cache: yes
       register: output
+
+    - name: Update apt package debug
       debug:
         msg: "{{ output }}"
       
@@ -15,6 +17,8 @@
       when: inventory_hostname in groups['piholes']
       command: "pihole -up"
       register: output
+
+    - name: Update pihole debug
       debug:
         msg: "{{ output }}"
       
