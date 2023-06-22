@@ -7,3 +7,7 @@
       apt: 
         upgrade: true
         update_cache: yes
+      register: output
+
+    - debug:
+       msg: "{{ output.stdout_lines }}"
