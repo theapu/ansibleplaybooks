@@ -24,4 +24,4 @@
       when: reboot_required_file.stat.exists == true
       
     - debug:
-       msg: "{{ output.stdout_lines }}"
+       msg: "{{ output }}"
