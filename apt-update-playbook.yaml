@@ -1,4 +1,5 @@
 ---
+- name: Update apt packages
 - hosts: all
 
   become: true
@@ -8,6 +9,15 @@
         upgrade: true
         update_cache: yes
       register: output
-
+      
+    - name: Check if reboot required
+      stat:
+        path: /var/run/reboot-required
+      register: reboot_required_file
+      
+    - name: Reboot if required
+      reboot:
+      when: reboot_required_file.stat.exists == true
+      
     - debug:
        msg: "{{ output.stdout_lines }}"
