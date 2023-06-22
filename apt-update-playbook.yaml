@@ -9,7 +9,7 @@
         update_cache: yes
       register: output1
 
-    - name: Update pihole check
+    - name: Update apt packages check
       become: no
       when: {{ taskresults is failed }}
       mail:
@@ -21,6 +21,10 @@
         subject: Update pihole check failed - Ansible 
         body: Update pihole check failed in "{{ ansible_hostname }}".
       delegate_to: 127.0.0.1
+
+    - name: Show debug messages
+      debug:
+        msg: "{{ output1 }}"
       
     - name: Update pihole
       when: inventory_hostname in groups['piholes']
@@ -64,11 +68,11 @@
       delegate_to: 127.0.0.1
       register: output4
 
-    - name: Show debug messages
-      debug:
-        msg: "{{ item }}"
-      with_items:
-        - "{{ output1 }}"
-        - "{{ output2 }}"
-        - "{{ output3 }}"
-        - "{{ output4 }}"
+    # - name: Show debug messages
+    #   debug:
+    #     msg: "{{ item }}"
+    #   with_items:
+    #     - "{{ output1 }}"
+    #     - "{{ output2 }}"
+    #     - "{{ output3 }}"
+    #     - "{{ output4 }}"
