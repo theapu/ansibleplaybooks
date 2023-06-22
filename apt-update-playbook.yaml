@@ -9,6 +9,11 @@
         update_cache: yes
       register: output
       
+    - name: Update pihole
+      when: inventory_hostname in groups['piholes']
+      command: "pihole -up"
+      register: output
+      
     - name: Check if reboot required
       stat:
         path: /var/run/reboot-required
