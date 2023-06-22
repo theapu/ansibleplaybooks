@@ -3,7 +3,7 @@
   hosts: servers
   become: true
   tasks:
-  - name: Handle the error
+  - name: Execute with error handling
     block:
       - name: Update apt packages
         apt: 
