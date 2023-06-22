@@ -53,8 +53,10 @@
 
     - name: Show debug messages
       debug:
-        when: "item.stdout" and "item.stderr"
+        when: "{{ item.stdout }}" and "{{ item.stderr }}"
         msg: "{{ item.stdout }}\nError: {{ item.stderr }}"
       with_items:
         - "{{ output1 }}"
-
+        - "{{ output2 }}"
+        - "{{ output3 }}"
+        - "{{ output4 }}"
