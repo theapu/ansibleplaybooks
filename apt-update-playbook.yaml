@@ -8,6 +8,19 @@
         upgrade: true
         update_cache: yes
       register: output1
+
+    - name: Update pihole check
+      become: no
+      when: {{ taskresults is failed }}
+      mail:
+        host: "{{ var_gmail_smtp_server }}"
+        port: "{{ var_gmail_smtp_port }}"
+        username: "{{ var_gmail_sender }}"
+        password: "{{ var_gmail_password }}"
+        to: "{{ var_gmail_receiver }}"
+        subject: Update pihole check failed - Ansible 
+        body: Update pihole check failed in "{{ ansible_hostname }}".
+      delegate_to: 127.0.0.1
       
     - name: Update pihole
       when: inventory_hostname in groups['piholes']
@@ -53,8 +66,7 @@
 
     - name: Show debug messages
       debug:
-        when: item.stdout is defined and item.stderr is defined 
-        msg: "{{ item.stdout }}\nError: {{ item.stderr }}"
+        msg: "{{ item }}"
       with_items:
         - "{{ output1 }}"
         - "{{ output2 }}"
