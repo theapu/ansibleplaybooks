@@ -9,6 +9,8 @@
           apt:
             upgrade: true
             update_cache: yes
+            async: 60
+            poll: 60
           register: output1
           
         - name: Update pihole
