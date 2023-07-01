@@ -24,7 +24,7 @@
         - name: Reboot if required
           when: reboot_required_file.stat.exists == true and inventory_hostname in groups['piholes']
           reboot:
-            reboot_timeout: 90
+            post_reboot_delay: 60
           register: output3
           
         - name: Sending an e-mail if rebooted
