@@ -85,9 +85,9 @@
           debug:
             msg: "{{ item }}"
           with_items:
-            - "{{ output1 }}"
-            - "{{ output2 }}"
-            - "{{ output3 }}"
-            - "{{ output4 }}"
-            - "{{ output5 }}"
-            - "{{ output6 }}"
+            - "{{ output1 | default(omit) }}"
+            - "{{ output2 | default(omit) }}"
+            - "{{ output3 | default(omit) }}"
+            - "{{ output4 | default(omit) }}"
+            - "{{ output5 | default(omit) }}"
+            - "{{ output6 | default(omit) }}"
