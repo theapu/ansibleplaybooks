@@ -1,0 +1,50 @@
+---
+- name: Check apt package updates
+  hosts: dockerservers
+  become: true
+  tasks:
+    - name: Execute with error handling
+      block:
+        - name: Check apt updates
+          apt:
+            upgrade: false
+            update_cache: yes
+          register: output1
+        - name:
+          command: apt list --upgradable
+          register: output2
+        - name: Sending an e-mail
+          become: no
+          mail:
+            host: "{{ var_gmail_smtp_server }}"
+            port: "{{ var_gmail_smtp_port }}"
+            username: "{{ var_gmail_sender }}"
+            password: "{{ var_gmail_password }}"
+            to: "{{ var_gmail_receiver }}"
+            subject: Ansible task failed
+            body: Avilable apt upgrades for "{{ inventory_hostname }}" - "{{ output2.stdout_lines }}".
+          delegate_to: 127.0.0.1
+          register: output3
+      rescue:
+        - name: Sending an e-mail if any task failed
+          become: no
+          mail:
+            host: "{{ var_gmail_smtp_server }}"
+            port: "{{ var_gmail_smtp_port }}"
+            username: "{{ var_gmail_sender }}"
+            password: "{{ var_gmail_password }}"
+            to: "{{ var_gmail_receiver }}"
+            subject: Ansible task failed
+            body: Ansible task failed for "{{ inventory_hostname }}" - "{{ ansible_failed_task }}".
+          delegate_to: 127.0.0.1
+          register: output4
+      always:
+        - name: Show debug messages
+          debug:
+            msg: "{{ item }}"
+          with_items:
+            - "{{ output1 }}"
+            - "{{ output2 }}"
+            - "{{ output3 }}"
+            - "{{ output4 }}"
+   
