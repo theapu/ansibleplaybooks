@@ -21,7 +21,7 @@
             username: "{{ var_gmail_sender }}"
             password: "{{ var_gmail_password }}"
             to: "{{ var_gmail_receiver }}"
-            subject: Ansible task failed
+            subject: Avilable apt upgrades for "{{ inventory_hostname }}"
             body: Avilable apt upgrades for "{{ inventory_hostname }}" - "{{ output2.stdout_lines }}".
           delegate_to: 127.0.0.1
           register: output3
