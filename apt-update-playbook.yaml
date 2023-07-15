@@ -22,14 +22,14 @@
           register: reboot_required_file
           
         - name: Reboot if required
-          when: reboot_required_file.stat.exists == true and inventory_hostname in groups['piholes']
+          when: reboot_required_file.stat.exists == true and inventory_hostname in groups['autoreboot']
           reboot:
             post_reboot_delay: 60
           register: output3
           
         - name: Sending an e-mail if rebooted
           become: no
-          when: reboot_required_file.stat.exists == true and inventory_hostname in groups['piholes']
+          when: reboot_required_file.stat.exists == true and inventory_hostname in groups['autoreboot']
           mail:
             host: "{{ var_gmail_smtp_server }}"
             port: "{{ var_gmail_smtp_port }}"
@@ -43,7 +43,7 @@
           
         - name: Sending an e-mail if reboot needed
           become: no
-          when: reboot_required_file.stat.exists == true and inventory_hostname in groups['proxmox']
+          when: reboot_required_file.stat.exists == true and inventory_hostname in groups['manualreboot']
           mail:
             host: "{{ var_gmail_smtp_server }}"
             port: "{{ var_gmail_smtp_port }}"
