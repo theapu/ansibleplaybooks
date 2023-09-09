@@ -50,8 +50,8 @@
             username: "{{ var_gmail_sender }}"
             password: "{{ var_gmail_password }}"
             to: "{{ var_gmail_receiver }}"
-            subject: Server Reboot requited - Ansible
-            body: Reboot requied for system "{{ inventory_hostname }}".
+            subject: Server Reboot required - Ansible
+            body: Reboot required for system "{{ inventory_hostname }}".
           delegate_to: 127.0.0.1
           register: output5
 
