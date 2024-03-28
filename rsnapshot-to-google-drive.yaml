@@ -1,0 +1,44 @@
+---
+- name: tar rsnapshot and upload to google drive
+  hosts: dockerservers
+  become: true
+  tasks:
+    - name: Execute with error handling
+      block:
+        - name: Run script
+          script: /opt/scripts/backuprsnapshots.sh
+          register: output1
+
+        - name: Sending an e-mail if tasks findished successfully
+          become: no
+          mail:
+            host: "{{ var_gmail_smtp_server }}"
+            port: "{{ var_gmail_smtp_port }}"
+            username: "{{ var_gmail_sender }}"
+            password: "{{ var_gmail_password }}"
+            to: "{{ var_gmail_receiver }}"
+            subject: Rsnapshot backup success - Ansible
+            body: Rsnapshot backup success for "{{ inventory_hostname }}".
+          delegate_to: 127.0.0.1
+          register: output2
+      rescue:
+        - name: Sending an e-mail if any task failed
+          become: no
+          mail:
+            host: "{{ var_gmail_smtp_server }}"
+            port: "{{ var_gmail_smtp_port }}"
+            username: "{{ var_gmail_sender }}"
+            password: "{{ var_gmail_password }}"
+            to: "{{ var_gmail_receiver }}"
+            subject: Ansible task failed
+            body: Ansible task failed for "{{ inventory_hostname }}" - "{{ ansible_failed_task }}".
+          delegate_to: 127.0.0.1
+          register: output3
+      always:
+        - name: Show debug messages
+          debug:
+            msg: "{{ item }}"
+          with_items:
+            - "{{ output1 | default(omit) }}"
+            - "{{ output2 | default(omit) }}"
+            - "{{ output3 | default(omit) }}"
