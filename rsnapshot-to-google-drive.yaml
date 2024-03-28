@@ -6,7 +6,7 @@
     - name: Execute with error handling
       block:
         - name: Run script
-          script: /opt/scripts/backuprsnapshots.sh
+          command: bash /opt/scripts/backuprsnapshots.sh
           register: output1
 
         - name: Sending an e-mail if tasks findished successfully
