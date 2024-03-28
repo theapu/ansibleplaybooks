@@ -7,7 +7,6 @@
       block:
         - name: Run script
           command: bash /opt/scripts/backuprsnapshots.sh
-          register: output1
 
         - name: Sending an e-mail if tasks findished successfully
           become: no
@@ -20,7 +19,7 @@
             subject: Rsnapshot backup success - Ansible
             body: Rsnapshot backup success for "{{ inventory_hostname }}".
           delegate_to: 127.0.0.1
-          register: output2
+          register: output1
       rescue:
         - name: Sending an e-mail if any task failed
           become: no
@@ -33,7 +32,7 @@
             subject: Ansible task failed
             body: Ansible task failed for "{{ inventory_hostname }}" - "{{ ansible_failed_task }}".
           delegate_to: 127.0.0.1
-          register: output3
+          register: output2
       always:
         - name: Show debug messages
           debug:
@@ -41,4 +40,3 @@
           with_items:
             - "{{ output1 | default(omit) }}"
             - "{{ output2 | default(omit) }}"
-            - "{{ output3 | default(omit) }}"
