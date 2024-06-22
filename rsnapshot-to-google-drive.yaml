@@ -6,7 +6,7 @@
     - name: Execute with error handling
       block:
         - name: Run script
-          command: "{{ var_rsnapshot_command }}" "{{ var_rsnapshot_argument }}"
+          command: "{{ var_rsnapshot_command }} {{ var_rsnapshot_argument }}"
 
         - name: Sending an e-mail if tasks findished successfully
           become: no
