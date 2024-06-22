@@ -1,6 +1,6 @@
 ---
 - name: tar rsnapshot and upload to google drive
-  hosts: dockerservers
+  hosts: rsnapshotservers
   become: true
   tasks:
     - name: Execute with error handling
