@@ -6,7 +6,7 @@
     - name: Execute with error handling
       block:
         - name: Run script
-          command: bash /opt/scripts/backuprsnapshots.sh
+          command: "{{ var_rsnapshot_command }}" "{{ var_rsnapshot_argument }}"
 
         - name: Sending an e-mail if tasks findished successfully
           become: no
