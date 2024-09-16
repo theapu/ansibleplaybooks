@@ -5,7 +5,7 @@
   tasks:
     - name: Execute with error handling
       block:
-        - name: Update apt packages
+        - name: Update apt packages for autoreboot systems
           when: inventory_hostname in groups['autoreboot']
           apt:
             upgrade: true
@@ -30,8 +30,8 @@
             name: docker-ce-cli
             selection: hold
 
-        - name: Update apt packages
-          when: inventory_hostname in groups['dockerhost']
+        - name: Update apt packages for manualreboot systems
+          when: inventory_hostname in groups['manualreboot']
           apt:
             upgrade: true
             update_cache: yes
