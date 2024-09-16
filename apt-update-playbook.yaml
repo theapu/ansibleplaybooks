@@ -13,22 +13,22 @@
           register: output1
 
         - name: Prevent docker from being upgraded
-            when: inventory_hostname in groups['dockerhost']
-            ansible.builtin.dpkg_selections:
-              name: docker
-              selection: hold
+          when: inventory_hostname in groups['dockerhost']
+          ansible.builtin.dpkg_selections:
+            name: docker
+            selection: hold
 
         - name: Prevent docker-ce from being upgraded
-            when: inventory_hostname in groups['dockerhost']
-            ansible.builtin.dpkg_selections:
-              name: docker-ce
-              selection: hold
+          when: inventory_hostname in groups['dockerhost']
+          ansible.builtin.dpkg_selections:
+            name: docker-ce
+            selection: hold
 
         - name: Prevent docker-ce-cli from being upgraded
-            when: inventory_hostname in groups['dockerhost']
-            ansible.builtin.dpkg_selections:
-              name: docker-ce-cli
-              selection: hold
+          when: inventory_hostname in groups['dockerhost']
+          ansible.builtin.dpkg_selections:
+            name: docker-ce-cli
+            selection: hold
 
         - name: Update apt packages
           when: inventory_hostname in groups['dockerhost']
