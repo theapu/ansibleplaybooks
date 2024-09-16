@@ -14,19 +14,19 @@
 
         - name: Prevent docker from being upgraded
           when: inventory_hostname in groups['dockerhost']
-          ansible.builtin.dpkg_selections:
+          dpkg_selections:
             name: docker
             selection: hold
 
         - name: Prevent docker-ce from being upgraded
           when: inventory_hostname in groups['dockerhost']
-          ansible.builtin.dpkg_selections:
+          dpkg_selections:
             name: docker-ce
             selection: hold
 
         - name: Prevent docker-ce-cli from being upgraded
           when: inventory_hostname in groups['dockerhost']
-          ansible.builtin.dpkg_selections:
+          dpkg_selections:
             name: docker-ce-cli
             selection: hold
 
@@ -41,6 +41,11 @@
           when: inventory_hostname in groups['piholes']
           command: pihole -up
           register: output3
+
+        - name: Remove dependencies that are no longer required
+          apt:
+            autoremove: yes
+          register: output4
           
         - name: Check if reboot required
           stat:
@@ -51,7 +56,7 @@
           when: reboot_required_file.stat.exists == true and inventory_hostname in groups['autoreboot']
           reboot:
             post_reboot_delay: 60
-          register: output4
+          register: output5
           
         - name: Sending an e-mail if rebooted
           become: no
@@ -65,7 +70,7 @@
             subject: Server Rebooted - Ansible
             body: Rebooted system "{{ ansible_hostname }}".
           delegate_to: 127.0.0.1
-          register: output5
+          register: output6
           
         - name: Sending an e-mail if reboot needed
           become: no
@@ -79,7 +84,7 @@
             subject: Server Reboot required - Ansible
             body: Reboot required for system "{{ inventory_hostname }}".
           delegate_to: 127.0.0.1
-          register: output6
+          register: output7
 
         - name: Sending an e-mail if tasks findished successfully
           become: no
@@ -92,7 +97,7 @@
             subject: Server Update success - Ansible
             body: Server Update success for "{{ inventory_hostname }}".
           delegate_to: 127.0.0.1
-          register: output7
+          register: output8
       rescue:
         - name: Sending an e-mail if any task failed
           become: no
@@ -105,7 +110,7 @@
             subject: Ansible task failed
             body: Ansible task failed for "{{ inventory_hostname }}" - "{{ ansible_failed_task }}".
           delegate_to: 127.0.0.1
-          register: output7
+          register: output8
       always:
         - name: Show debug messages
           debug:
@@ -118,3 +123,4 @@
             - "{{ output5 | default(omit) }}"
             - "{{ output6 | default(omit) }}"
             - "{{ output7 | default(omit) }}"
+            - "{{ output8 | default(omit) }}"
