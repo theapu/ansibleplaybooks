@@ -6,15 +6,41 @@
     - name: Execute with error handling
       block:
         - name: Update apt packages
+          when: inventory_hostname in groups['autoreboot']
           apt:
             upgrade: true
             update_cache: yes
           register: output1
+
+        - name: Prevent docker from being upgraded
+            when: inventory_hostname in groups['dockerhost']
+            ansible.builtin.dpkg_selections:
+              name: docker
+              selection: hold
+
+        - name: Prevent docker-ce from being upgraded
+            when: inventory_hostname in groups['dockerhost']
+            ansible.builtin.dpkg_selections:
+              name: docker-ce
+              selection: hold
+
+        - name: Prevent docker-ce-cli from being upgraded
+            when: inventory_hostname in groups['dockerhost']
+            ansible.builtin.dpkg_selections:
+              name: docker-ce-cli
+              selection: hold
+
+        - name: Update apt packages
+          when: inventory_hostname in groups['dockerhost']
+          apt:
+            upgrade: true
+            update_cache: yes
+          register: output2
           
         - name: Update pihole
           when: inventory_hostname in groups['piholes']
           command: pihole -up
-          register: output2
+          register: output3
           
         - name: Check if reboot required
           stat:
@@ -25,7 +51,7 @@
           when: reboot_required_file.stat.exists == true and inventory_hostname in groups['autoreboot']
           reboot:
             post_reboot_delay: 60
-          register: output3
+          register: output4
           
         - name: Sending an e-mail if rebooted
           become: no
@@ -39,7 +65,7 @@
             subject: Server Rebooted - Ansible
             body: Rebooted system "{{ ansible_hostname }}".
           delegate_to: 127.0.0.1
-          register: output4
+          register: output5
           
         - name: Sending an e-mail if reboot needed
           become: no
@@ -53,7 +79,7 @@
             subject: Server Reboot required - Ansible
             body: Reboot required for system "{{ inventory_hostname }}".
           delegate_to: 127.0.0.1
-          register: output5
+          register: output6
 
         - name: Sending an e-mail if tasks findished successfully
           become: no
@@ -66,7 +92,7 @@
             subject: Server Update success - Ansible
             body: Server Update success for "{{ inventory_hostname }}".
           delegate_to: 127.0.0.1
-          register: output6
+          register: output7
       rescue:
         - name: Sending an e-mail if any task failed
           become: no
@@ -79,7 +105,7 @@
             subject: Ansible task failed
             body: Ansible task failed for "{{ inventory_hostname }}" - "{{ ansible_failed_task }}".
           delegate_to: 127.0.0.1
-          register: output5
+          register: output7
       always:
         - name: Show debug messages
           debug:
@@ -91,3 +117,4 @@
             - "{{ output4 | default(omit) }}"
             - "{{ output5 | default(omit) }}"
             - "{{ output6 | default(omit) }}"
+            - "{{ output7 | default(omit) }}"
