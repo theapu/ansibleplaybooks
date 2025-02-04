@@ -1,5 +1,5 @@
 - name: Renew SSL certificates
-  hosts: sslhosts
+  hosts: server
   become: true
   tasks:
     - name: Execute with error handling
