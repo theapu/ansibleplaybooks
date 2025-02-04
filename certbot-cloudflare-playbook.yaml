@@ -66,13 +66,15 @@
             state: absent
           loop: "{{ groups['sslhosts'] }}"
           register: output6
-
-        - name: Create symlink for Caddy letsencrypt directory (per host)
-          file:
-            src: "/etc/letsencrypt/live/{{ item }}"  # Use 'item'
-            dest: "{{ var_caddy_ssl_dir }}/{{ item }}"  # Use 'item'
-            state: link
-            force: yes
+        
+        - name: Copy Let's Encrypt certificates (per host)
+          synchronize:  # Use synchronize module for recursive copy and symlink dereferencing
+            src: "/etc/letsencrypt/live/{{ item }}/"  # Trailing slash is important for recursive copy
+            dest: "{{ var_caddy_ssl_dir }}/{{ item }}/"
+            recursive: yes  # Copy directories and subdirectories
+            # Dereference symlinks (important!)
+            rsync_opts:
+              - "--copy-links" # Dereference symlinks
           loop: "{{ groups['sslhosts'] }}"
           register: output7
 
