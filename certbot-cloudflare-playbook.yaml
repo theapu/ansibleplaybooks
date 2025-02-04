@@ -55,7 +55,7 @@
             name: caddy # Or the actual name of your container
             state: started
             restart: yes
-          register: output8
+          register: output5
 
         - name: Sending an e-mail if tasks findished successfully
           become: no
@@ -68,7 +68,7 @@
             subject: Certbot renewal success - Ansible
             body:  Certbot renewal success for "{{ inventory_hostname }}".
           delegate_to: 127.0.0.1
-          register: output9
+          register: output6
 
       rescue:
         - name: Sending an e-mail if any task failed
@@ -82,7 +82,7 @@
             subject: Ansible task failed
             body: Ansible task failed for "{{ inventory_hostname }}" - "{{ ansible_failed_task }}".
           delegate_to: 127.0.0.1
-          register: output10
+          register: output7
       always:
         - name: Show debug messages
           debug:
@@ -95,6 +95,3 @@
             - "{{ output5 | default(omit) }}"
             - "{{ output6 | default(omit) }}"
             - "{{ output7 | default(omit) }}"
-            - "{{ output8 | default(omit) }}"
-            - "{{ output9 | default(omit) }}"
-            - "{{ output10 | default(omit) }}"
