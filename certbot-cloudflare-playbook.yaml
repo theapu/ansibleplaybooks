@@ -37,7 +37,6 @@
         - name: Run certbot for wildcard certificate (per host)
           shell: >-
             certbot certonly
-            --staging
             --dns-cloudflare
             --dns-cloudflare-credentials {{ ansible_user_dir }}/.secrets/cloudflare.ini
             --dns-cloudflare-propagation-seconds 120
