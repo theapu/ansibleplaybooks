@@ -1,0 +1,109 @@
+- name: Renew SSL certificates
+  hosts: sslhosts
+  become: true
+  tasks:
+    - name: Execute with error handling
+      block:
+        - name: Install certbot and cloudflare plugin
+          apt:
+            name: 
+              - python3-certbot
+              - python3-certbot-dns-cloudflare
+            state: present
+            update_cache: yes
+          register: output1
+
+        - name: Create .secrets directory if it doesn't exist
+          file:
+            path: "{{ ansible_user_dir }}/.secrets"
+            state: directory
+            mode: 0700  # Important: Restrict permissions for secrets
+            owner: "{{ ansible_user_id }}" # Ensure correct ownership
+            group: "{{ ansible_user_gid }}" # Ensure correct group ownership
+          register: output2
+          
+        - name: Create cloudflare.ini file with token
+          blockinfile: # Use blockinfile for formatted content
+            path: "{{ ansible_user_dir }}/.secrets/cloudflare.ini"
+            create: yes  # Create the file if it doesn't exist
+            block: |
+              dns_cloudflare_api_token = {{ var_cloudflare_token }}
+            mode: 0600
+            owner: "{{ ansible_user_id }}"
+            group: "{{ ansible_user_gid }}"
+          when: var_cloudflare_token is defined
+          register: output3
+
+        - name: Run certbot for wildcard certificate
+          shell: >-
+            certbot certonly
+            --dns-cloudflare
+            --dns-cloudflare-credentials {{ ansible_user_dir }}/.secrets/cloudflare.ini
+            --dns-cloudflare-propagation-seconds 180
+            -d "*.{{ inventory_hostname }}"
+          args:
+            chdir: "{{ ansible_user_dir }}/.secrets" # or wherever appropriate for certbot to run
+            creates: "/etc/letsencrypt/live/{{ inventory_hostname }}/fullchain.pem" # Check for a file that certbot creates on success
+          register: output4 # Capture the result for debugging
+          failed_when: output4.rc != 0 # Fail the task if certbot fails
+
+        - name: Remove existing Caddy letsencrypt directory (if it exists)
+          file:
+            path: "{{ var_caddy_ssl_dir }}/{{ inventory_hostname }}"
+            state: absent # Removes the directory or file
+          register: output5
+        
+        - name: Create symlink for Caddy letsencrypt directory
+          file:
+            src: "/etc/letsencrypt/live/{{ inventory_hostname }}"
+            dest: "{{ var_caddy_ssl_dir }}/{{ inventory_hostname }}"
+            state: link
+            force: yes # Overwrite existing symlink if necessary
+          register: output6
+
+        - name: Restart Caddy Docker container
+          docker_container:
+            name: caddy # Or the actual name of your container
+            restart: yes
+          register: output7
+
+        - name: Sending an e-mail if tasks findished successfully
+          become: no
+          mail:
+            host: "{{ var_gmail_smtp_server }}"
+            port: "{{ var_gmail_smtp_port }}"
+            username: "{{ var_gmail_sender }}"
+            password: "{{ var_gmail_password }}"
+            to: "{{ var_gmail_receiver }}"
+            subject: Certbot renewal success - Ansible
+            body:  Certbot renewal success for "{{ inventory_hostname }}".
+          delegate_to: 127.0.0.1
+          register: output8
+
+      rescue:
+        - name: Sending an e-mail if any task failed
+          become: no
+          mail:
+            host: "{{ var_gmail_smtp_server }}"
+            port: "{{ var_gmail_smtp_port }}"
+            username: "{{ var_gmail_sender }}"
+            password: "{{ var_gmail_password }}"
+            to: "{{ var_gmail_receiver }}"
+            subject: Ansible task failed
+            body: Ansible task failed for "{{ inventory_hostname }}" - "{{ ansible_failed_task }}".
+          delegate_to: 127.0.0.1
+          register: output9
+      always:
+        - name: Show debug messages
+          debug:
+            msg: "{{ item }}"
+          with_items:
+            - "{{ output1 | default(omit) }}"
+            - "{{ output2 | default(omit) }}"
+            - "{{ output3 | default(omit) }}"
+            - "{{ output4 | default(omit) }}"
+            - "{{ output5 | default(omit) }}"
+            - "{{ output6 | default(omit) }}"
+            - "{{ output7 | default(omit) }}"
+            - "{{ output8 | default(omit) }}"
+            - "{{ output9 | default(omit) }}"
