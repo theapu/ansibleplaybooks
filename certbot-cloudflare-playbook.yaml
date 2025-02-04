@@ -46,8 +46,7 @@
             creates: "/etc/letsencrypt/live/{{ item }}/fullchain.pem"  # Use item for creates path
           loop: "{{ groups['sslhosts'] }}"  # Iterate over the sslhosts group
           register: output4  # Register all results
-          failed_when: output4.results | map(attribute='rc') | select('!=', 0) | list | length > 0 # Check rc for all hosts
-
+          
         - name: Create Caddy SSL directory if it doesn't exist
           file:
             path: "{{ var_caddy_ssl_dir }}"
