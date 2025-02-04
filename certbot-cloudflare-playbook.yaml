@@ -34,18 +34,19 @@
           when: var_cloudflare_token is defined
           register: output3
 
-        - name: Run certbot for wildcard certificate
+        - name: Run certbot for wildcard certificate (per host)
           shell: >-
             certbot certonly
             --dns-cloudflare
             --dns-cloudflare-credentials {{ ansible_user_dir }}/.secrets/cloudflare.ini
             --dns-cloudflare-propagation-seconds 180
-            -d "*.{{ inventory_hostname }}"
+            -d "*.{{ item }}"  # Iterate through hostnames
           args:
-            chdir: "{{ ansible_user_dir }}/.secrets" # or wherever appropriate for certbot to run
-            creates: "/etc/letsencrypt/live/{{ inventory_hostname }}/fullchain.pem" # Check for a file that certbot creates on success
-          register: output4 # Capture the result for debugging
-          failed_when: output4.rc != 0 # Fail the task if certbot fails
+            chdir: "{{ ansible_user_dir }}/.secrets"
+            creates: "/etc/letsencrypt/live/{{ item }}/fullchain.pem"  # Use item for creates path
+          loop: "{{ groups['sslhosts'] }}"  # Iterate over the sslhosts group
+          register: output4  # Register all results
+          failed_when: output4.results | map(attribute='rc') | select('!=', 0) | list | length > 0 # Check rc for all hosts
 
         - name: Create Caddy SSL directory if it doesn't exist
           file:
@@ -56,18 +57,20 @@
             group: root # Or the appropriate group
           register: output5
 
-        - name: Remove existing Caddy letsencrypt directory (if it exists)
+        - name: Remove existing Caddy letsencrypt directory (per host)
           file:
-            path: "{{ var_caddy_ssl_dir }}/{{ inventory_hostname }}"
-            state: absent # Removes the directory or file
+            path: "{{ var_caddy_ssl_dir }}/{{ item }}"  # Use 'item' for each host
+            state: absent
+          loop: "{{ groups['sslhosts'] }}"
           register: output6
-        
-        - name: Create symlink for Caddy letsencrypt directory
+
+        - name: Create symlink for Caddy letsencrypt directory (per host)
           file:
-            src: "/etc/letsencrypt/live/{{ inventory_hostname }}"
-            dest: "{{ var_caddy_ssl_dir }}/{{ inventory_hostname }}"
+            src: "/etc/letsencrypt/live/{{ item }}"  # Use 'item'
+            dest: "{{ var_caddy_ssl_dir }}/{{ item }}"  # Use 'item'
             state: link
-            force: yes # Overwrite existing symlink if necessary
+            force: yes
+          loop: "{{ groups['sslhosts'] }}"
           register: output7
 
         - name: Restart Caddy Docker container
