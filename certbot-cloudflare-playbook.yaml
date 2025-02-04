@@ -50,35 +50,6 @@
             creates: "/etc/letsencrypt/live/{{ item }}/fullchain.pem"  # Use item for creates path
           loop: "{{ groups['sslhosts'] }}"  # Iterate over the sslhosts group
           register: output4  # Register all results
-          
-        - name: Create Caddy SSL directory if it doesn't exist
-          file:
-            path: "{{ var_caddy_ssl_dir }}"
-            state: directory
-            mode: 0755  # Adjust permissions as needed
-            owner: root # Or whoever should own this directory
-            group: root # Or the appropriate group
-          register: output5
-
-        - name: Remove existing Caddy letsencrypt directory (per host)
-          file:
-            path: "{{ var_caddy_ssl_dir }}/{{ item }}"  # Use 'item' for each host
-            state: absent
-          loop: "{{ groups['sslhosts'] }}"
-          register: output6
-        
-        - name: Copy Let's Encrypt certificates (per host)
-          synchronize:  # Use synchronize module for recursive copy and symlink dereferencing
-            src: "/etc/letsencrypt/live/{{ item }}/"  # Trailing slash is important for recursive copy
-            dest: "{{ var_caddy_ssl_dir }}/{{ item }}/"
-            recursive: yes  # Copy directories and subdirectories
-            # Dereference symlinks (important!)
-            rsync_opts:
-              - "--copy-links" # Dereference symlinks
-          loop: "{{ groups['sslhosts'] }}"
-          become: true  # Elevate privileges for the rsync command
-          become_user: root # or a user with appropriate rights
-          register: output7
 
         - name: Restart Caddy Docker container
           docker_container:
