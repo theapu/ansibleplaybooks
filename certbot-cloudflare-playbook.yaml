@@ -50,12 +50,12 @@
           loop: "{{ groups['sslhosts'] }}"  # Iterate over the sslhosts group
           register: output4  # Register all results
 
-        - name: Restart Caddy Docker container
-          docker_container:
-            name: caddy # Or the actual name of your container
-            state: started
-            restart: yes
-          register: output5
+        # - name: Restart Caddy Docker container
+        #   docker_container:
+        #     name: caddy # Or the actual name of your container
+        #     state: started
+        #     restart: yes
+        #   register: output5
 
         - name: Sending an e-mail if tasks findished successfully
           become: no
@@ -92,6 +92,6 @@
             - "{{ output2 | default(omit) }}"
             - "{{ output3 | default(omit) }}"
             - "{{ output4 | default(omit) }}"
-            - "{{ output5 | default(omit) }}"
+            # - "{{ output5 | default(omit) }}"
             - "{{ output6 | default(omit) }}"
             - "{{ output7 | default(omit) }}"
