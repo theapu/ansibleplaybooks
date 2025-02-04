@@ -76,6 +76,8 @@
             rsync_opts:
               - "--copy-links" # Dereference symlinks
           loop: "{{ groups['sslhosts'] }}"
+          become: true  # Elevate privileges for the rsync command
+          become_user: root # or a user with appropriate rights
           register: output7
 
         - name: Restart Caddy Docker container
