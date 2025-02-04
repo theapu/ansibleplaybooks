@@ -54,7 +54,7 @@
           systemd:
             name: "{{ item }}"
             state: restarted
-          loop: "{{ groups['services'] | default() }}" # Iterate through the 'services' group, provide empty list as default
+          loop: "{{ groups['services'] }}" # Iterate through the 'services' group, provide empty list as default
           when: groups['services'] is defined # Only run this task if the group is defined.
           ignore_errors: yes # Optional: Continue even if a service restart fails
           register: output5 # Capture results for debugging
