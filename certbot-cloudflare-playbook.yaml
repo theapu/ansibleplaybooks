@@ -47,11 +47,20 @@
           register: output4 # Capture the result for debugging
           failed_when: output4.rc != 0 # Fail the task if certbot fails
 
+        - name: Create Caddy SSL directory if it doesn't exist
+          file:
+            path: "{{ var_caddy_ssl_dir }}"
+            state: directory
+            mode: 0755  # Adjust permissions as needed
+            owner: root # Or whoever should own this directory
+            group: root # Or the appropriate group
+          register: output5
+
         - name: Remove existing Caddy letsencrypt directory (if it exists)
           file:
             path: "{{ var_caddy_ssl_dir }}/{{ inventory_hostname }}"
             state: absent # Removes the directory or file
-          register: output5
+          register: output6
         
         - name: Create symlink for Caddy letsencrypt directory
           file:
@@ -59,13 +68,13 @@
             dest: "{{ var_caddy_ssl_dir }}/{{ inventory_hostname }}"
             state: link
             force: yes # Overwrite existing symlink if necessary
-          register: output6
+          register: output7
 
         - name: Restart Caddy Docker container
           docker_container:
             name: caddy # Or the actual name of your container
             restart: yes
-          register: output7
+          register: output8
 
         - name: Sending an e-mail if tasks findished successfully
           become: no
@@ -78,7 +87,7 @@
             subject: Certbot renewal success - Ansible
             body:  Certbot renewal success for "{{ inventory_hostname }}".
           delegate_to: 127.0.0.1
-          register: output8
+          register: output9
 
       rescue:
         - name: Sending an e-mail if any task failed
@@ -92,7 +101,7 @@
             subject: Ansible task failed
             body: Ansible task failed for "{{ inventory_hostname }}" - "{{ ansible_failed_task }}".
           delegate_to: 127.0.0.1
-          register: output9
+          register: output10
       always:
         - name: Show debug messages
           debug:
@@ -107,3 +116,4 @@
             - "{{ output7 | default(omit) }}"
             - "{{ output8 | default(omit) }}"
             - "{{ output9 | default(omit) }}"
+            - "{{ output10 | default(omit) }}"
