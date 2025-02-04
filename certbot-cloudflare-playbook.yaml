@@ -40,7 +40,7 @@
             --staging
             --dns-cloudflare
             --dns-cloudflare-credentials {{ ansible_user_dir }}/.secrets/cloudflare.ini
-            --dns-cloudflare-propagation-seconds 180
+            --dns-cloudflare-propagation-seconds 120
             -d "*.{{ item }}"  # Iterate through hostnames
             -m {{ var_certbot_mail }} 
             --agree-tos 
