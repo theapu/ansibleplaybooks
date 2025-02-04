@@ -51,7 +51,7 @@
           register: output4  # Register all results
           
         - name: Restart services
-          service:
+          systemd:
             name: "{{ item }}"
             state: restarted
           loop: "{{ groups['services'] | default() }}" # Iterate through the 'services' group, provide empty list as default
