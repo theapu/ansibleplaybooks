@@ -37,10 +37,14 @@
         - name: Run certbot for wildcard certificate (per host)
           shell: >-
             certbot certonly
+            --staging
             --dns-cloudflare
             --dns-cloudflare-credentials {{ ansible_user_dir }}/.secrets/cloudflare.ini
             --dns-cloudflare-propagation-seconds 180
             -d "*.{{ item }}"  # Iterate through hostnames
+            -m {{ var_certbot_mail }} 
+            --agree-tos 
+            -n
           args:
             chdir: "{{ ansible_user_dir }}/.secrets"
             creates: "/etc/letsencrypt/live/{{ item }}/fullchain.pem"  # Use item for creates path
