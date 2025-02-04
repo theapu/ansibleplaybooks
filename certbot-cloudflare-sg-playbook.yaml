@@ -1,0 +1,99 @@
+- name: Renew SSL certificates
+  hosts: server
+  become: true
+  tasks:
+    - name: Execute with error handling
+      block:
+        - name: Install certbot and cloudflare plugin
+          apt:
+            name: 
+              - python3-certbot
+              - python3-certbot-dns-cloudflare
+            state: present
+            update_cache: yes
+          register: output1
+
+        - name: Create .secrets directory if it doesn't exist
+          file:
+            path: "{{ ansible_user_dir }}/.secrets"
+            state: directory
+            mode: 0700  # Important: Restrict permissions for secrets
+            owner: "{{ ansible_user_id }}" # Ensure correct ownership
+            group: "{{ ansible_user_gid }}" # Ensure correct group ownership
+          register: output2
+          
+        - name: Create cloudflare.ini file with token
+          blockinfile: # Use blockinfile for formatted content
+            path: "{{ ansible_user_dir }}/.secrets/cloudflare.ini"
+            create: yes  # Create the file if it doesn't exist
+            block: |
+              dns_cloudflare_api_token = {{ var_cloudflare_token }}
+            mode: 0600
+            owner: "{{ ansible_user_id }}"
+            group: "{{ ansible_user_gid }}"
+          when: var_cloudflare_token is defined
+          register: output3
+
+        - name: Run certbot for wildcard certificate (per host)
+          shell: >-
+            certbot certonly
+            --dns-cloudflare
+            --dns-cloudflare-credentials {{ ansible_user_dir }}/.secrets/cloudflare.ini
+            --dns-cloudflare-propagation-seconds 120
+            -d "*.{{ item }}"
+            -m {{ var_certbot_mail }} 
+            --agree-tos 
+            -n
+          args:
+            chdir: "{{ ansible_user_dir }}/.secrets"
+            creates: "/etc/letsencrypt/live/{{ item }}/fullchain.pem"  # Use item for creates path
+          loop: "{{ groups['sslhosts'] }}"  # Iterate over the sslhosts group
+          register: output4  # Register all results
+          
+        - name: Restart services
+          service:
+            name: "{{ item }}"
+            state: restarted
+          loop: "{{ groups['services'] | default() }}" # Iterate through the 'services' group, provide empty list as default
+          when: groups['services'] is defined # Only run this task if the group is defined.
+          ignore_errors: yes # Optional: Continue even if a service restart fails
+          register: output5 # Capture results for debugging
+
+        - name: Sending an e-mail if tasks findished successfully
+          become: no
+          mail:
+            host: "{{ var_gmail_smtp_server }}"
+            port: "{{ var_gmail_smtp_port }}"
+            username: "{{ var_gmail_sender }}"
+            password: "{{ var_gmail_password }}"
+            to: "{{ var_gmail_receiver }}"
+            subject: Certbot renewal success - Ansible
+            body:  Certbot renewal success for "{{ inventory_hostname }}".
+          delegate_to: 127.0.0.1
+          register: output6
+
+      rescue:
+        - name: Sending an e-mail if any task failed
+          become: no
+          mail:
+            host: "{{ var_gmail_smtp_server }}"
+            port: "{{ var_gmail_smtp_port }}"
+            username: "{{ var_gmail_sender }}"
+            password: "{{ var_gmail_password }}"
+            to: "{{ var_gmail_receiver }}"
+            subject: Ansible task failed
+            body: Ansible task failed for "{{ inventory_hostname }}" - "{{ ansible_failed_task }}".
+          delegate_to: 127.0.0.1
+          register: output7
+      always:
+        - name: Show debug messages
+          debug:
+            msg: "{{ item }}"
+          with_items:
+            - "{{ output1 | default(omit) }}"
+            - "{{ output2 | default(omit) }}"
+            - "{{ output3 | default(omit) }}"
+            - "{{ output4 | default(omit) }}"
+            - "{{ output5 | default(omit) }}"
+            - "{{ output6 | default(omit) }}"
+            - "{{ output7 | default(omit) }}"
