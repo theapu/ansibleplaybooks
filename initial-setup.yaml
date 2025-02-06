@@ -111,12 +111,11 @@
         state: enabled
       register: output13
 
-    - name: Reboot the server and continue without waiting
-      reboot:
-        msg: "Rebooting server for maintenance"
-        delay: 0  # Optional: Delay before rebooting (in seconds)
-      async: 1     # Run the reboot task asynchronously
-      poll: 0      # Don't wait for the reboot to complete
+    - name: Reboot the system and disconnect
+      command: shutdown -r now "Rebooting system after setup"
+      async: 1
+      poll: 0
+      ignore_errors: yes
       register: output14
 
   handlers:
