@@ -128,7 +128,7 @@
       async: 1
       poll: 0
       ignore_errors: yes
-      register: output14
+
 
     - name: Show debug messages
       debug:
