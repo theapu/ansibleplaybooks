@@ -17,10 +17,16 @@
         state: present
       register: output2
 
-    - name: Add Docker's GPG key
-      apt_key:
-        url: https://download.docker.com/linux/ubuntu/gpg
-        state: present
+    - name: Download Docker GPG key
+      get_url:
+        url: "https://download.docker.com/linux/ubuntu/gpg"
+        dest: "/tmp/docker.gpg"
+        mode: '0644'
+
+    - name: Convert Docker GPG key to dearmored format
+      command: gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg /tmp/docker.gpg
+      args:
+        creates: /usr/share/keyrings/docker-archive-keyring.gpg  # Prevents re-running if already exists
       register: output3
 
     - name: Get system architecture
