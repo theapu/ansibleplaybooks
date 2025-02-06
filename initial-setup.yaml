@@ -40,7 +40,7 @@
       register: output5
 
     # Configure SSH
-    - name: Add SSH public key for user {{ var_username }}
+    - name: Add SSH public key for user
       authorized_key:
         user: "{{ var_username }}"
         key: "{{ var_ssh_public_key }}"
@@ -93,7 +93,7 @@
       register: output10
 
     # Configure UFW
-    - name: Allow SSH on port {{ var_ssh_port }}
+    - name: Allow SSH on custom port
       ufw:
         rule: allow
         port: "{{ var_ssh_port }}"
