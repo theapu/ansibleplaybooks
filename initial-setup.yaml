@@ -36,7 +36,7 @@
       register: output4
 
     - name: Set password for user
-      command: echo "{{ var_username }}:{{ var_user_password }}" | chpasswd  # Replace with a secure password
+      shell: echo "{{ var_username }}:{{ var_user_password }}" | chpasswd  # Replace with a secure password
       register: output5
 
     - name: Create SSH configuration directory if not exists
@@ -109,14 +109,8 @@
     - name: Enable UFW
       ufw:
         state: enabled
+      notify: Reboot the system and disconnect
       register: output13
-
-    - name: Reboot the system and disconnect
-      command: shutdown -r now "Rebooting system after setup"
-      async: 1
-      poll: 0
-      ignore_errors: yes
-      register: output14
 
   handlers:
     - name: Restart SSH
@@ -128,6 +122,13 @@
       service:
         name: fail2ban
         state: restarted
+        
+    - name: Reboot the system and disconnect
+      command: shutdown -r now "Rebooting system after setup"
+      async: 1
+      poll: 0
+      ignore_errors: yes
+      register: output14
 
     - name: Show debug messages
       debug:
