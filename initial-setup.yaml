@@ -111,9 +111,12 @@
         state: enabled
       register: output13
 
-    - name: Reboot
+    - name: Reboot the server and continue without waiting
       reboot:
-        post_reboot_delay: 60
+        msg: "Rebooting server for maintenance"
+        delay: 0  # Optional: Delay before rebooting (in seconds)
+      async: 1     # Run the reboot task asynchronously
+      poll: 0      # Don't wait for the reboot to complete
       register: output14
 
   handlers:
