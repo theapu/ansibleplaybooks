@@ -77,7 +77,7 @@
         content: |
           [sshd]
           enabled = true
-          maxretry = 2
+          maxretry = 10
           bantime = 605000
           port = {{ var_ssh_port }}
         mode: '0644'
