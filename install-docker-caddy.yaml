@@ -1,0 +1,137 @@
+---
+- hosts: all
+  become: true
+  tasks:
+
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+      register: output1
+
+    - name: Install required packages
+      apt:
+        name:
+          - apt-transport-https
+          - ca-certificates
+          - curl
+          - software-properties-common
+        state: present
+      register: output2
+
+    - name: Add Docker's GPG key
+      apt_key:
+        url: https://download.docker.com/linux/ubuntu/gpg
+        state: present
+      register: output3
+
+    - name: Add Docker repository
+      apt_repository:
+        repo: deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable
+        state: present
+      register: output4
+
+    - name: Install Docker
+      apt:
+        name: docker-ce
+        state: present
+      register: output5
+
+    - name: Add user to docker group
+      user:
+        name: "{{ ansible_user }}"  # Use the current user
+        groups: docker
+        append: yes
+      register: output6
+
+    - name: Download docker-compose
+      get_url:
+        url: "https://github.com/docker/compose/releases/download/v2.32.4/docker-compose-linux-x86_64"
+        dest: /usr/local/bin/docker-compose
+        mode: '0755'
+      register: output7
+
+    - name: Create directories
+      file:
+        path: "{{ item }}"
+        state: directory
+        mode: '0755'
+      loop:
+        - /opt/DockerApps/caddy
+        - /opt/docker-compose/caddy
+      register: output8
+
+    - name: Create Caddyfile
+      copy:
+        content: |
+          #Disable server header in response
+          (common) {
+            header /* {
+              -Server
+            }
+          }
+          {
+            admin 0.0.0.0:2019
+          }
+        :80 {}
+          root /usr/share/caddy
+          file_server
+        :443 {
+            root * /usr/share/caddy
+            file_server
+          }
+        dest: /opt/DockerApps/caddy/Caddyfile
+        mode: '0644'
+      register: output9
+
+    - name: Create docker-compose.yml for Caddy
+      copy:
+        content: |
+          services:
+            caddy:
+              image: caddy:latest
+              container_name: caddy
+              environment:
+                - PUID=1000
+                - PGID=1000
+                - TZ=Asia/Kolkata
+              cap_add:
+                - NET_ADMIN
+              restart: unless-stopped
+              ports:
+                - "80:80"
+                - "443:443"
+                - "443:443/udp"
+                - "2019:2019"
+              volumes:
+                - /opt/DockerApps/caddy/Caddyfile:/etc/caddy/Caddyfile
+                - /opt/DockerApps/caddy/site:/srv
+                - caddy_data:/data
+                - caddy_config:/config
+          volumes:
+            caddy_data:
+            caddy_config:
+        dest: /opt/docker-compose/caddy/docker-compose.yml
+        mode: '0644'
+      register: output10
+
+    - name: Start Caddy container
+      docker_compose:
+        project_src: /opt/docker-compose/caddy
+        state: present
+      register: output11
+  
+    - name: Show debug messages
+      debug:
+        msg: "{{ item }}"
+      with_items:
+        - "{{ output1 | default(omit) }}"
+        - "{{ output2 | default(omit) }}"
+        - "{{ output3 | default(omit) }}"
+        - "{{ output4 | default(omit) }}"
+        - "{{ output5 | default(omit) }}"
+        - "{{ output6 | default(omit) }}"
+        - "{{ output7 | default(omit) }}"
+        - "{{ output8 | default(omit) }}"
+        - "{{ output9 | default(omit) }}"
+        - "{{ output10 | default(omit) }}"
+        - "{{ output11 | default(omit) }}"
