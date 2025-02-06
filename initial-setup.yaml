@@ -109,7 +109,6 @@
     - name: Enable UFW
       ufw:
         state: enabled
-        enabled: yes
       register: output13
 
   handlers:
