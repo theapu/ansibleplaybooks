@@ -23,15 +23,15 @@
         state: present
       register: output3
 
-     - name: Get system architecture
-       command: dpkg --print-architecture
-       register: arch
-       changed_when: false
+    - name: Get system architecture
+      command: dpkg --print-architecture
+      register: arch
+      changed_when: false
 
-     - name: Get Ubuntu release codename
-       command: lsb_release -cs
-       register: release
-       changed_when: false
+    - name: Get Ubuntu release codename
+      command: lsb_release -cs
+      register: release
+      changed_when: false
 
     - name: Add Docker repository
       apt_repository:
