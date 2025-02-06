@@ -23,9 +23,19 @@
         state: present
       register: output3
 
+     - name: Get system architecture
+       command: dpkg --print-architecture
+       register: arch
+       changed_when: false
+
+     - name: Get Ubuntu release codename
+       command: lsb_release -cs
+       register: release
+       changed_when: false
+
     - name: Add Docker repository
       apt_repository:
-        repo: deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable
+        repo: deb [arch={{ arch.stdout }} signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu {{ release.stdout }} stable
         state: present
       register: output4
 
