@@ -111,18 +111,21 @@
         state: enabled
       register: output13
 
+    - name: Reboot
+      reboot:
+        post_reboot_delay: 60
+      register: output14
+
   handlers:
     - name: Restart SSH
       service:
         name: ssh
         state: restarted
-      register: output14
 
     - name: Restart fail2ban
       service:
         name: fail2ban
         state: restarted
-      register: output15
 
     - name: Show debug messages
       debug:
@@ -141,5 +144,3 @@
         - "{{ output11 | default(omit) }}"
         - "{{ output12 | default(omit) }}"
         - "{{ output13 | default(omit) }}"
-        - "{{ output14 | default(omit) }}"
-        - "{{ output15 | default(omit) }}"
