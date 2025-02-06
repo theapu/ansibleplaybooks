@@ -39,20 +39,12 @@
       command: echo "{{ var_username }}:{{ var_user_password }}" | chpasswd  # Replace with a secure password
       register: output5
 
-    # Configure SSH
-    - name: Add SSH public key for user
-      authorized_key:
-        user: "{{ var_username }}"
-        key: "{{ var_ssh_public_key }}"
-        state: present
-      register: output6
-
     - name: Create SSH configuration directory if not exists
       file:
         path: /etc/ssh/sshd_config.d
         state: directory
         mode: '0755'
-      register: output7
+      register: output6
 
     - name: Configure SSH settings
       copy:
@@ -70,14 +62,14 @@
           PermitRootLogin no
         mode: '0644'
       notify: Restart SSH
-      register: output8
+      register: output7
 
     # Install fail2ban and configure it
     - name: Install fail2ban
       apt:
         name: fail2ban
         state: present
-      register: output9
+      register: output8
 
     - name: Configure fail2ban for SSH
       copy:
@@ -90,7 +82,7 @@
           port = {{ var_ssh_port }}
         mode: '0644'
       notify: Restart fail2ban
-      register: output10
+      register: output9
 
     # Configure UFW
     - name: Allow SSH on custom port
@@ -98,40 +90,40 @@
         rule: allow
         port: "{{ var_ssh_port }}"
         proto: tcp
-      register: output11
+      register: output10
 
     - name: Allow HTTP (port 80)
       ufw:
         rule: allow
         port: "80"
         proto: tcp
-      register: output12
+      register: output11
 
     - name: Allow HTTPS (port 443)
       ufw:
         rule: allow
         port: "443"
         proto: tcp
-      register: output13
+      register: output12
 
     - name: Enable UFW
       ufw:
         state: enabled
         enabled: yes
-      register: output14
+      register: output13
 
   handlers:
     - name: Restart SSH
       service:
         name: ssh
         state: restarted
-      register: output15
+      register: output14
 
     - name: Restart fail2ban
       service:
         name: fail2ban
         state: restarted
-      register: output16
+      register: output15
 
     - name: Show debug messages
       debug:
@@ -152,4 +144,3 @@
         - "{{ output13 | default(omit) }}"
         - "{{ output14 | default(omit) }}"
         - "{{ output15 | default(omit) }}"
-        - "{{ output16 | default(omit) }}"
