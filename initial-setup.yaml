@@ -109,7 +109,9 @@
     - name: Enable UFW
       ufw:
         state: enabled
-      notify: Reboot the system and disconnect
+      notify:
+        - Show debug messages
+        - Reboot the system and disconnect
       register: output13
 
   handlers:
@@ -128,7 +130,6 @@
       async: 1
       poll: 0
       ignore_errors: yes
-
 
     - name: Show debug messages
       debug:
