@@ -115,7 +115,7 @@
       register: output10
 
     - name: Start Caddy container
-      docker.docker_compose_v2:
+      docker_compose_v2:
         project_src: /opt/docker-compose/caddy
         state: present
       register: output11
