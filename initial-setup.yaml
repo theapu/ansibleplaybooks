@@ -112,8 +112,7 @@
       notify:
         - Show debug messages
         - Reboot the system and disconnect
-      register: output13
-
+        
   handlers:
     - name: Restart SSH
       service:
@@ -147,4 +146,3 @@
         - "{{ output10 | default(omit) }}"
         - "{{ output11 | default(omit) }}"
         - "{{ output12 | default(omit) }}"
-        - "{{ output13 | default(omit) }}"
