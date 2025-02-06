@@ -71,10 +71,11 @@
           {
             admin 0.0.0.0:2019
           }
-        :80 {}
-          root /usr/share/caddy
-          file_server
-        :443 {
+          :80 {
+            root /usr/share/caddy
+            file_server
+          }
+          :443 {
             root * /usr/share/caddy
             file_server
           }
