@@ -1,0 +1,155 @@
+---
+- name: Ubuntu/Debian Initial Setup
+  hosts: servers
+  become: yes
+
+  tasks:
+    # Update and Upgrade the system (Normal Upgrade)
+    - name: Upgrade installed packages (Normal Upgrade)
+      apt:
+        upgrade: yes
+        update_cache: yes
+      register: output1
+
+    # Create necessary directories
+    - name: Create /opt/DockerApps directory
+      file:
+        path: /opt/DockerApps
+        state: directory
+        mode: '0755'
+      register: output2
+
+    - name: Create /opt/docker-compose directory
+      file:
+        path: /opt/docker-compose
+        state: directory
+        mode: '0755'
+      register: output3
+
+    # Create a new sudo user
+    - name: Create user
+      user:
+        name: "{{ var_username }}"
+        shell: /bin/bash
+        create_home: yes
+        groups: sudo
+      register: output4
+
+    - name: Set password for user
+      command: echo "{{ var_username }}:{{ var_user_password }}" | chpasswd  # Replace with a secure password
+      register: output5
+
+    # Configure SSH
+    - name: Add SSH public key for user {{ var_username }}
+      authorized_key:
+        user: "{{ var_username }}"
+        key: "{{ var_ssh_public_key }}"
+        state: present
+      register: output6
+
+    - name: Create SSH configuration directory if not exists
+      file:
+        path: /etc/ssh/sshd_config.d
+        state: directory
+        mode: '0755'
+      register: output7
+
+    - name: Configure SSH settings
+      copy:
+        dest: /etc/ssh/sshd_config.d/01-permitlogin.conf
+        content: |
+          MaxAuthTries 3
+          ClientAliveInterval 60
+          TCPKeepAlive yes
+          ClientAliveCountMax 10000
+          Port {{ var_ssh_port }}
+          Match User {{ var_username }}
+          PasswordAuthentication yes
+          Match User all
+          PasswordAuthentication no
+          PermitRootLogin no
+        mode: '0644'
+      notify: Restart SSH
+      register: output8
+
+    # Install fail2ban and configure it
+    - name: Install fail2ban
+      apt:
+        name: fail2ban
+        state: present
+      register: output9
+
+    - name: Configure fail2ban for SSH
+      copy:
+        dest: /etc/fail2ban/jail.d/01-sshd.conf
+        content: |
+          [sshd]
+          enabled = true
+          maxretry = 2
+          bantime = 605000
+          port = {{ var_ssh_port }}
+        mode: '0644'
+      notify: Restart fail2ban
+      register: output10
+
+    # Configure UFW
+    - name: Allow SSH on port {{ var_ssh_port }}
+      ufw:
+        rule: allow
+        port: "{{ var_ssh_port }}"
+        proto: tcp
+      register: output11
+
+    - name: Allow HTTP (port 80)
+      ufw:
+        rule: allow
+        port: "80"
+        proto: tcp
+      register: output12
+
+    - name: Allow HTTPS (port 443)
+      ufw:
+        rule: allow
+        port: "443"
+        proto: tcp
+      register: output13
+
+    - name: Enable UFW
+      ufw:
+        state: enabled
+        enabled: yes
+      register: output14
+
+  handlers:
+    - name: Restart SSH
+      service:
+        name: ssh
+        state: restarted
+      register: output15
+
+    - name: Restart fail2ban
+      service:
+        name: fail2ban
+        state: restarted
+      register: output16
+
+    - name: Show debug messages
+      debug:
+        msg: "{{ item }}"
+      with_items:
+        - "{{ output1 | default(omit) }}"
+        - "{{ output2 | default(omit) }}"
+        - "{{ output3 | default(omit) }}"
+        - "{{ output4 | default(omit) }}"
+        - "{{ output5 | default(omit) }}"
+        - "{{ output6 | default(omit) }}"
+        - "{{ output7 | default(omit) }}"
+        - "{{ output8 | default(omit) }}"
+        - "{{ output9 | default(omit) }}"
+        - "{{ output10 | default(omit) }}"
+        - "{{ output11 | default(omit) }}"
+        - "{{ output12 | default(omit) }}"
+        - "{{ output13 | default(omit) }}"
+        - "{{ output14 | default(omit) }}"
+        - "{{ output15 | default(omit) }}"
+        - "{{ output16 | default(omit) }}"
