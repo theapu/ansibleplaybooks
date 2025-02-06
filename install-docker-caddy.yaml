@@ -33,7 +33,6 @@
       apt:
         name: docker-ce
         state: present
-        update_cache: yes
       register: output5
 
     - name: Add user to docker group
