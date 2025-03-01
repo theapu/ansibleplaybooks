@@ -8,6 +8,7 @@
       apt:
         upgrade: yes
         update_cache: yes
+      become: yes
       register: output1
 
     # Create necessary directories
@@ -16,6 +17,7 @@
         path: /opt/DockerApps
         state: directory
         mode: '0755'
+      become: yes
       register: output2
 
     - name: Create /opt/docker-compose directory
@@ -23,6 +25,7 @@
         path: /opt/docker-compose
         state: directory
         mode: '0755'
+      become: yes
       register: output3
 
     # Create a new sudo user
@@ -32,10 +35,12 @@
         shell: /bin/bash
         create_home: yes
         groups: sudo
+      become: yes
       register: output4
 
     - name: Set password for user
       shell: echo "{{ var_username }}:{{ var_user_password }}" | chpasswd  # Replace with a secure password
+      become: yes
       register: output5
 
     - name: Create SSH configuration directory if not exists
@@ -43,6 +48,7 @@
         path: /etc/ssh/sshd_config.d
         state: directory
         mode: '0755'
+      become: yes
       register: output6
 
     - name: Configure SSH settings
@@ -60,6 +66,7 @@
           PasswordAuthentication no
           PermitRootLogin no
         mode: '0644'
+      become: yes
       notify: Restart SSH
       register: output7
 
@@ -68,6 +75,7 @@
       apt:
         name: fail2ban
         state: present
+      become: yes
       register: output8
 
     - name: Configure fail2ban for SSH
@@ -80,6 +88,7 @@
           bantime = 605000
           port = {{ var_ssh_port }}
         mode: '0644'
+      become: yes
       notify: Restart fail2ban
       register: output9
 
@@ -89,6 +98,7 @@
         rule: allow
         port: "{{ var_ssh_port }}"
         proto: tcp
+      become: yes
       register: output10
 
     - name: Allow HTTP (port 80)
@@ -96,6 +106,7 @@
         rule: allow
         port: "80"
         proto: tcp
+      become: yes
       register: output11
 
     - name: Allow HTTPS (port 443)
@@ -103,11 +114,13 @@
         rule: allow
         port: "443"
         proto: tcp
+      become: yes
       register: output12
 
     - name: Enable UFW
       ufw:
         state: enabled
+      become: yes
       notify:
         - Show debug messages
         - Reboot the system and disconnect
@@ -125,6 +138,7 @@
         
     - name: Reboot the system and disconnect
       command: shutdown -r now "Rebooting system after setup"
+      become: yes
       async: 1
       poll: 0
       ignore_errors: yes
