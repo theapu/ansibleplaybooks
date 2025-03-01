@@ -2,7 +2,6 @@
 - name: Ubuntu/Debian Initial Setup
   hosts: servers
   become: yes
-
   tasks:
     # Update and Upgrade the system (Normal Upgrade)
     - name: Upgrade installed packages (Normal Upgrade)
