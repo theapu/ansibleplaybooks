@@ -112,14 +112,16 @@
   tasks:
     - name: "Prune unused docker images with notifications"
       block:
-        - name: "Remove unused (dangling) Docker images"
+        - name: "Remove all unused Docker images (including tagged)"
           community.docker.docker_prune:
             images: true
             images_filters:
-              dangling: true
+              # dangling: false will remove all images not associated with a container, not just untagged ones.
+              # This is equivalent to the 'docker image prune -a' command.
+              dangling: false
           register: prune_result
 
-        - name: "Send prune success e-mail"
+        - name: "Send prune success e--mail"
           ansible.builtin.mail:
             host: "{{ var_gmail_smtp_server }}"
             port: "{{ var_gmail_smtp_port }}"
