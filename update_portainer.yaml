@@ -1,0 +1,161 @@
+---
+- name: Update and Recreate Docker Containers from Inventory
+  hosts: all
+  become: true
+  # The playbook now expects all variables (container and email)
+  # to be defined in your inventory file for each host or group.
+
+  tasks:
+    - name: "Update container with error handling and notifications"
+      block:
+        - name: "Ensure required container variables are defined"
+          ansible.builtin.assert:
+            that:
+              - container_name is defined
+              - image_name is defined
+              - image_tag is defined
+            fail_msg: "Please define container_name, image_name, and image_tag in your inventory file for {{ inventory_hostname }}."
+
+        - name: "Ensure required email variables are defined"
+          ansible.builtin.assert:
+            that:
+              - var_gmail_smtp_server is defined
+              - var_gmail_smtp_port is defined
+              - var_gmail_sender is defined
+              - var_gmail_password is defined
+              - var_gmail_receiver is defined
+            fail_msg: "Please define all 'var_gmail_*' variables in your inventory file."
+          run_once: true # Check this only once per run
+
+        - name: "Pull the latest Docker image: {{ image_name }}:{{ image_tag }}"
+          community.docker.docker_image:
+            name: "{{ image_name }}:{{ image_tag }}"
+            source: pull
+          register: image_pull_result
+
+        - name: "Stop, remove, and recreate container on local servers (Port Mapping)"
+          community.docker.docker_container:
+            name: "{{ container_name }}"
+            image: "{{ image_name }}:{{ image_tag }}"
+            state: started
+            recreate: yes
+            pull: true
+            restart_policy: always
+            ports:
+              - "9000:9000"
+            volumes:
+              - /var/run/docker.sock:/var/run/docker.sock
+              - "{{ container_name }}_data:/data"
+          when: inventory_hostname in groups['localservers']
+          register: container_update_result_local
+
+        - name: "Stop, remove, and recreate container on external servers (Host Network)"
+          community.docker.docker_container:
+            name: "{{ container_name }}"
+            image: "{{ image_name }}:{{ image_tag }}"
+            state: started
+            recreate: yes
+            pull: true
+            restart_policy: always
+            network_mode: host
+            volumes:
+              - /var/run/docker.sock:/var/run/docker.sock
+              - "{{ container_name }}_data:/data"
+          when: inventory_hostname in groups['externalservers']
+          register: container_update_result_external
+
+        - name: "Send update success e-mail"
+          ansible.builtin.mail:
+            host: "{{ var_gmail_smtp_server }}"
+            port: "{{ var_gmail_smtp_port }}"
+            username: "{{ var_gmail_sender }}"
+            password: "{{ var_gmail_password }}"
+            to: "{{ var_gmail_receiver }}"
+            subject: "SUCCESS: Docker container '{{ container_name }}' updated on {{ inventory_hostname }}"
+            body: "The Ansible playbook successfully updated the '{{ container_name }}' container on {{ inventory_hostname }} to image '{{ image_name }}:{{ image_tag }}'."
+          delegate_to: localhost
+          become: no
+          register: success_email_result
+
+      rescue:
+        - name: "Send update failure e-mail"
+          ansible.builtin.mail:
+            host: "{{ var_gmail_smtp_server }}"
+            port: "{{ var_gmail_smtp_port }}"
+            username: "{{ var_gmail_sender }}"
+            password: "{{ var_gmail_password }}"
+            to: "{{ var_gmail_receiver }}"
+            subject: "FAILURE: Docker update task failed on {{ inventory_hostname }}"
+            body: |
+              An Ansible task failed while updating container '{{ container_name }}' on host '{{ inventory_hostname }}'.
+              Failed Task: {{ ansible_failed_task }}
+              Result: {{ ansible_failed_result }}
+          delegate_to: localhost
+          become: no
+          register: failure_email_result
+
+      always:
+        - name: "Show update debug messages"
+          ansible.builtin.debug:
+            msg: "{{ item }}"
+          with_items:
+            - "{{ image_pull_result | default(omit) }}"
+            - "{{ container_update_result_local | default(omit) }}"
+            - "{{ container_update_result_external | default(omit) }}"
+            - "{{ success_email_result | default(omit) }}"
+            - "{{ failure_email_result | default(omit) }}"
+
+- name: Clean Up Docker Resources
+  hosts: all
+  become: true
+
+  tasks:
+    - name: "Prune unused docker images with notifications"
+      block:
+        - name: "Remove unused (dangling) Docker images"
+          community.docker.docker_prune:
+            images: true
+            images_filters:
+              dangling: true
+          register: prune_result
+
+        - name: "Send prune success e-mail"
+          ansible.builtin.mail:
+            host: "{{ var_gmail_smtp_server }}"
+            port: "{{ var_gmail_smtp_port }}"
+            username: "{{ var_gmail_sender }}"
+            password: "{{ var_gmail_password }}"
+            to: "{{ var_gmail_receiver }}"
+            subject: "SUCCESS: Docker images pruned on {{ inventory_hostname }}"
+            body: |
+              The Ansible playbook successfully pruned unused Docker images on {{ inventory_hostname }}.
+              Details: {{ prune_result.stdout | default('No output') }}"
+          delegate_to: localhost
+          become: no
+          register: prune_success_email_result
+
+      rescue:
+        - name: "Send prune failure e-mail"
+          ansible.builtin.mail:
+            host: "{{ var_gmail_smtp_server }}"
+            port: "{{ var_gmail_smtp_port }}"
+            username: "{{ var_gmail_sender }}"
+            password: "{{ var_gmail_password }}"
+            to: "{{ var_gmail_receiver }}"
+            subject: "FAILURE: Docker prune task failed on {{ inventory_hostname }}"
+            body: |
+              An Ansible task failed during Docker image cleanup on host '{{ inventory_hostname }}'.
+              Failed Task: {{ ansible_failed_task }}
+              Result: {{ ansible_failed_result }}
+          delegate_to: localhost
+          become: no
+          register: prune_failure_email_result
+
+      always:
+        - name: "Show prune debug messages"
+          ansible.builtin.debug:
+            msg: "{{ item }}"
+          with_items:
+            - "{{ prune_result | default(omit) }}"
+            - "{{ prune_success_email_result | default(omit) }}"
+            - "{{ prune_failure_email_result | default(omit) }}"
