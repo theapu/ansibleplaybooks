@@ -27,48 +27,28 @@
             fail_msg: "Please define all 'var_gmail_*' variables in your inventory file."
           run_once: true # Check this only once per run
 
-        # --- GATHER IMAGE INFORMATION ---
-        - name: "1. Get info about the remote image from the registry"
-          community.docker.docker_image_info:
-            name: "{{ image_name }}:{{ image_tag }}"
-            source: remote
-          register: remote_image_info
-
-        - name: "Set remote image digest fact"
-          ansible.builtin.set_fact:
-            remote_digest: "{{ (remote_image_info.images[0].RepoDigests | first) | default('') }}"
-
-        - name: "2. Get info about the currently running container"
+        # --- GATHER INITIAL STATE AND PULL LATEST IMAGE ---
+        - name: "1. Check for existing container"
           community.docker.docker_container_info:
             name: "{{ container_name }}"
           register: container_info
 
-        - name: "3. Get info about the local image used by the container"
-          community.docker.docker_image_info:
-            name: "{{ container_info.container.Image }}"
-          when: container_info.exists
-          register: local_image_info
-
-        - name: "Set local image digest fact"
-          ansible.builtin.set_fact:
-            local_digest: "{{ (local_image_info.images[0].RepoDigests | first) | default('') if container_info.exists else '' }}"
+        - name: "2. Pull latest image to check for updates"
+          community.docker.docker_image:
+            name: "{{ image_name }}:{{ image_tag }}"
+            source: pull
+          register: image_pull_result
 
         # --- CONDITIONALLY UPDATE CONTAINER ---
-        - name: "Update container because a new image is available or container is missing"
+        - name: "Update container because a new image was pulled or container is missing"
           block:
-            - name: "Pull the latest Docker image: {{ image_name }}:{{ image_tag }}"
-              community.docker.docker_image:
-                name: "{{ image_name }}:{{ image_tag }}"
-                source: pull
-              register: image_pull_result
-
             - name: "Stop, remove, and recreate container on local servers (Port Mapping)"
               community.docker.docker_container:
                 name: "{{ container_name }}"
                 image: "{{ image_name }}:{{ image_tag }}"
                 state: started
                 recreate: yes
-                pull: true
+                pull: true # Ensures the just-pulled image is used
                 restart_policy: always
                 ports:
                   - "9000:9000"
@@ -84,7 +64,7 @@
                 image: "{{ image_name }}:{{ image_tag }}"
                 state: started
                 recreate: yes
-                pull: true
+                pull: true # Ensures the just-pulled image is used
                 restart_policy: always
                 network_mode: host
                 volumes:
@@ -105,12 +85,12 @@
               delegate_to: localhost
               become: no
               register: success_email_result
-          when: not container_info.exists or (remote_digest | length > 0 and remote_digest != local_digest)
+          when: image_pull_result.changed or not container_info.exists
 
-        - name: "Skip update as container is already on the latest image"
+        - name: "Skip update as container is already using the latest image"
           ansible.builtin.debug:
             msg: "Container '{{ container_name }}' on {{ inventory_hostname }} is already running the latest image. No action taken."
-          when: container_info.exists and (remote_digest | length == 0 or remote_digest == local_digest)
+          when: not image_pull_result.changed and container_info.exists
 
       rescue:
         - name: "Send update failure e-mail"
@@ -134,6 +114,7 @@
           ansible.builtin.debug:
             msg: "{{ item }}"
           with_items:
+            - "{{ container_info | default(omit) }}"
             - "{{ image_pull_result | default(omit) }}"
             - "{{ container_update_result_local | default(omit) }}"
             - "{{ container_update_result_external | default(omit) }}"
