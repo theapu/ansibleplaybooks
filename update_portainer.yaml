@@ -2,7 +2,7 @@
 - name: Update and Recreate Docker Containers from Inventory
   hosts: all
   become: true
-  # The playbook now expects all variables (container and email)
+  # The playbook expects all variables (container and email)
   # to be defined in your inventory file for each host or group.
 
   tasks:
@@ -27,20 +27,43 @@
             fail_msg: "Please define all 'var_gmail_*' variables in your inventory file."
           run_once: true # Check this only once per run
 
-        # --- GATHER INITIAL STATE AND PULL LATEST IMAGE ---
-        - name: "1. Check for existing container"
+        # --- GATHER INITIAL STATE ---
+        - name: "1. Get running container's info to find its image ID"
           community.docker.docker_container_info:
             name: "{{ container_name }}"
           register: container_info
 
-        - name: "2. Pull latest image to check for updates"
+        - name: "2. Save the current image ID for comparison later"
+          ansible.builtin.set_fact:
+            current_image_id: "{{ container_info.container.ImageID }}"
+          when: container_info.exists
+
+        # --- PULL LATEST IMAGE AND GET ITS INFO ---
+        - name: "3. Pull the latest image from the registry"
           community.docker.docker_image:
             name: "{{ image_name }}:{{ image_tag }}"
             source: pull
+            force_source: true # Ensures Ansible checks the remote registry for a newer version.
           register: image_pull_result
 
+        - name: "4. Get info of the newly pulled image"
+          community.docker.docker_image_info:
+            name: "{{ image_name }}:{{ image_tag }}"
+          register: latest_image_info
+
+        - name: "5. Save the latest image ID for comparison"
+          ansible.builtin.set_fact:
+            latest_image_id: "{{ latest_image_info.images[0].Id }}"
+          when: latest_image_info.images | length > 0
+
+        # --- COMPARE AND DECIDE ---
+        - name: "6. Check if the container's image ID differs from the latest image ID"
+          ansible.builtin.set_fact:
+            update_available: "{{ current_image_id != latest_image_id }}"
+          when: container_info.exists and latest_image_id is defined
+
         # --- CONDITIONALLY UPDATE CONTAINER ---
-        - name: "Update container because a new image was pulled or container is missing"
+        - name: "Update container because a new image is available or container is missing"
           block:
             - name: "Stop, remove, and recreate container on local servers (Port Mapping)"
               community.docker.docker_container:
@@ -48,7 +71,7 @@
                 image: "{{ image_name }}:{{ image_tag }}"
                 state: started
                 recreate: yes
-                pull: true # Ensures the just-pulled image is used
+                pull: true
                 restart_policy: always
                 ports:
                   - "9000:9000"
@@ -64,7 +87,7 @@
                 image: "{{ image_name }}:{{ image_tag }}"
                 state: started
                 recreate: yes
-                pull: true # Ensures the just-pulled image is used
+                pull: true
                 restart_policy: always
                 network_mode: host
                 volumes:
@@ -85,12 +108,12 @@
               delegate_to: localhost
               become: no
               register: success_email_result
-          when: image_pull_result.changed or not container_info.exists
+          when: (update_available | default(false)) or not container_info.exists
 
         - name: "Skip update as container is already using the latest image"
           ansible.builtin.debug:
             msg: "Container '{{ container_name }}' on {{ inventory_hostname }} is already running the latest image. No action taken."
-          when: not image_pull_result.changed and container_info.exists
+          when: not (update_available | default(false)) and container_info.exists
 
       rescue:
         - name: "Send update failure e-mail"
@@ -109,18 +132,6 @@
           become: no
           register: failure_email_result
 
-      always:
-        - name: "Show update debug messages"
-          ansible.builtin.debug:
-            msg: "{{ item }}"
-          with_items:
-            - "{{ container_info | default(omit) }}"
-            - "{{ image_pull_result | default(omit) }}"
-            - "{{ container_update_result_local | default(omit) }}"
-            - "{{ container_update_result_external | default(omit) }}"
-            - "{{ success_email_result | default(omit) }}"
-            - "{{ failure_email_result | default(omit) }}"
-
 - name: Clean Up Docker Resources
   hosts: all
   become: true
@@ -128,16 +139,14 @@
   tasks:
     - name: "Prune unused docker images with notifications"
       block:
-        - name: "Remove all unused Docker images (including tagged)"
+        - name: "Remove all unused Docker images (dangling=false)"
           community.docker.docker_prune:
             images: true
             images_filters:
-              # dangling: false will remove all images not associated with a container, not just untagged ones.
-              # This is equivalent to the 'docker image prune -a' command.
               dangling: false
           register: prune_result
 
-        - name: "Send prune success e-mail"
+        - name: "Send prune success e--mail"
           ansible.builtin.mail:
             host: "{{ var_gmail_smtp_server }}"
             port: "{{ var_gmail_smtp_port }}"
@@ -167,13 +176,3 @@
               Result: {{ ansible_failed_result }}
           delegate_to: localhost
           become: no
-          register: prune_failure_email_result
-
-      always:
-        - name: "Show prune debug messages"
-          ansible.builtin.debug:
-            msg: "{{ item }}"
-          with_items:
-            - "{{ prune_result | default(omit) }}"
-            - "{{ prune_success_email_result | default(omit) }}"
-            - "{{ prune_failure_email_result | default(omit) }}"
