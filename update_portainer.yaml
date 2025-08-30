@@ -77,7 +77,7 @@
                   - "9000:9000"
                 volumes:
                   - /var/run/docker.sock:/var/run/docker.sock
-                  - "{{ container_name }}_data:/data"
+                  - "{{ container_data_volume }}:/data"
               when: inventory_hostname in groups['localservers']
               register: container_update_result_local
 
@@ -92,7 +92,7 @@
                 network_mode: host
                 volumes:
                   - /var/run/docker.sock:/var/run/docker.sock
-                  - "{{ container_name }}_data:/data"
+                  - "{{ container_data_volume }}:/data"
               when: inventory_hostname in groups['externalservers']
               register: container_update_result_external
 
