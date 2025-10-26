@@ -103,7 +103,7 @@
                 username: "{{ var_gmail_sender }}"
                 password: "{{ var_gmail_password }}"
                 to: "{{ var_gmail_receiver }}"
-                subject: "SUCCESS: Docker container '{{ container_name }}' updated on {{ inventory_hostname }}"
+                subject: "Portainer Docker container '{{ container_name }}' updated on {{ inventory_hostname }}"
                 body: "The Ansible playbook successfully updated the '{{ container_name }}' container on {{ inventory_hostname }} to image '{{ image_name }}:{{ image_tag }}'."
               delegate_to: localhost
               become: no
@@ -123,7 +123,7 @@
             username: "{{ var_gmail_sender }}"
             password: "{{ var_gmail_password }}"
             to: "{{ var_gmail_receiver }}"
-            subject: "FAILURE: Docker update task failed on {{ inventory_hostname }}"
+            subject: "Portainer Docker update task failed on {{ inventory_hostname }}"
             body: |
               An Ansible task failed while updating container '{{ container_name }}' on host '{{ inventory_hostname }}'.
               Failed Task: {{ ansible_failed_task }}
@@ -153,7 +153,7 @@
             username: "{{ var_gmail_sender }}"
             password: "{{ var_gmail_password }}"
             to: "{{ var_gmail_receiver }}"
-            subject: "SUCCESS: Docker images pruned on {{ inventory_hostname }}"
+            subject: "Portainer: Docker images pruned on {{ inventory_hostname }}"
             body: |
               The Ansible playbook successfully pruned unused Docker images on {{ inventory_hostname }}.
               Details: {{ prune_result.stdout | default('No output') }}"
@@ -169,7 +169,7 @@
             username: "{{ var_gmail_sender }}"
             password: "{{ var_gmail_password }}"
             to: "{{ var_gmail_receiver }}"
-            subject: "FAILURE: Docker prune task failed on {{ inventory_hostname }}"
+            subject: "Portainer: Docker prune task failed on {{ inventory_hostname }}"
             body: |
               An Ansible task failed during Docker image cleanup on host '{{ inventory_hostname }}'.
               Failed Task: {{ ansible_failed_task }}
