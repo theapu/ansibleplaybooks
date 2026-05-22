@@ -2,8 +2,8 @@
 - name: Check apt package updates
   hosts: dockerservers
   become: true
-  vars:
-    var_gmail_password: "{{ lookup('env', 'var_gmail_password') }}"
+  vars_files:
+    - vars/secrets.yml
   tasks:
     - name: Execute with error handling
       block:
