@@ -2,6 +2,8 @@
 - name: Update and Recreate Docker Containers from Inventory
   hosts: all
   become: true
+  vars_files:
+    - vars/secrets.yml 
   # The playbook expects all variables (container and email)
   # to be defined in your inventory file for each host or group.
 

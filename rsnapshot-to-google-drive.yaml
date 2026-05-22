@@ -2,6 +2,8 @@
 - name: tar rsnapshot and upload to google drive
   hosts: rsnapshotservers
   become: true
+  vars_files:
+    - vars/secrets.yml
   tasks:
     - name: Execute with error handling
       block:

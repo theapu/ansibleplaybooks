@@ -1,6 +1,8 @@
 ---
 - hosts: servers
   become: true
+  vars_files:
+    - vars/secrets.yml
   tasks:
     - name: Update apt cache
       apt:

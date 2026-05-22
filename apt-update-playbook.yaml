@@ -2,6 +2,8 @@
 - name: Update apt packages and pihole
   hosts: servers
   become: true
+  vars_files:
+    - vars/secrets.yml
   tasks:
     - name: Execute with error handling
       block:

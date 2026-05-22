@@ -2,6 +2,8 @@
 - name: Ubuntu/Debian Initial Setup
   hosts: servers
   become: yes
+  vars_files:
+    - vars/secrets.yml
   tasks:
     # Update and Upgrade the system (Normal Upgrade)
     - name: Upgrade installed packages (Normal Upgrade)
