@@ -143,6 +143,8 @@
 - name: Clean Up Docker Resources
   hosts: all
   become: true
+  vars_files:
+    - vars/secrets.yml  # Add this line here
 
   tasks:
     - name: "Prune unused docker images with notifications"
