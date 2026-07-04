@@ -14,12 +14,6 @@
             update_cache: yes
           register: output1
 
-        - name: Prevent docker from being upgraded
-          when: inventory_hostname in groups['dockerhost']
-          dpkg_selections:
-            name: docker
-            selection: hold
-
         - name: Prevent docker-ce from being upgraded
           when: inventory_hostname in groups['dockerhost']
           dpkg_selections:
