@@ -85,4 +85,35 @@ In threshold mode, set `TRIP_VALUE` just above the dry reading from the serial
 monitor — a dry board is rarely a clean zero, and a trip point too close to it
 will fire on humidity alone.
 
+The movement is symmetric: the servo returns to `ANGLE_AT_DRY` by itself once
+the sensor dries out. For a door, `ANGLE_AT_DRY` is the open position and
+`ANGLE_AT_WET` the closed one; swap the two values if your linkage runs the
+other way.
+
+`CONFIRM_SAMPLES` requires that many consecutive readings agree before the servo
+moves — three at the default sample interval means about 1.5 seconds of settled
+readings, so a stray splash cannot slam the door shut and straight back open.
+Raise it if the sensor sits somewhere exposed to spray.
+
+## Servo speed
+
+`servo.write()` sends the servo to a position as fast as it can travel; a servo
+has no speed input of its own. To slow it, the sketch commands a series of
+nearby angles instead of one distant one, stepping `SWEEP_STEP_DEG` degrees and
+pausing `SWEEP_STEP_DELAY_MS` between steps.
+
+| `SWEEP_STEP_DELAY_MS` | Time for a full 180° sweep |
+| --------------------- | -------------------------- |
+| 5   | ~0.9s |
+| 15 (default) | ~2.7s |
+| 40  | ~7s   |
+| 80  | ~14s  |
+
+Leave `SWEEP_STEP_DEG` at 1 — raising it makes the motion coarser and jerkier
+without making it faster. Note that a move blocks until it finishes, so the
+sensor is not sampled while the servo is travelling.
+
+Below roughly 5ms per step you are asking for movement finer than the servo can
+resolve, and it will simply run at full speed.
+
 Swap `ANGLE_AT_DRY` and `ANGLE_AT_WET` to reverse the direction of rotation.

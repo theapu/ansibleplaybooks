@@ -31,11 +31,16 @@
  *
  * Two behaviours, chosen with MODE below:
  *   MODE_THRESHOLD    - (default) the servo sweeps the full ANGLE_AT_DRY ->
- *                       ANGLE_AT_WET travel the moment water is detected, and
- *                       back again once the sensor dries. For a valve, a lid,
- *                       or anything else that is simply open or shut.
+ *                       ANGLE_AT_WET travel when water is detected, and back
+ *                       again once the sensor dries. For a valve, a lid, or a
+ *                       door: ANGLE_AT_DRY is the open position and
+ *                       ANGLE_AT_WET the closed one.
  *   MODE_PROPORTIONAL - servo angle follows the water level continuously,
  *                       e.g. a gauge needle.
+ *
+ * The servo travels at a controlled speed set by SWEEP_STEP_DELAY_MS rather
+ * than slamming to the target, and a move blocks until it completes - fine
+ * here, since nothing else needs servicing while the door is in motion.
  */
 
 #include <Servo.h>
@@ -69,6 +74,19 @@ const int ANGLE_DEADBAND = 2;
 const int TRIP_VALUE  = 150;
 const int HYSTERESIS  = 30;
 
+// Threshold mode only: how many consecutive readings must agree before the
+// servo moves. At the default sample interval, 3 means the sensor has to stay
+// wet (or dry) for about 1.5 seconds, so a single splash does not drive the
+// door shut and straight back open.
+const uint8_t CONFIRM_SAMPLES = 3;
+
+// Servo speed: the servo steps SWEEP_STEP_DEG degrees, waits, and repeats.
+// Larger delays give slower travel. At 15ms per degree a full 180 degree sweep
+// takes about 2.7 seconds; 40ms stretches it to roughly 7. Raising
+// SWEEP_STEP_DEG is coarser but no faster - lower the delay for speed instead.
+const int           SWEEP_STEP_DEG      = 1;
+const unsigned long SWEEP_STEP_DELAY_MS = 15;
+
 const unsigned long SAMPLE_INTERVAL_MS = 500;
 const unsigned long SENSOR_SETTLE_MS   = 10;   // let the sensor stabilise after power-up
 const uint8_t       SAMPLES_PER_READ   = 8;    // averaged, to damp noise
@@ -98,15 +116,34 @@ int readLevel() {
   return (int)(total / SAMPLES_PER_READ);
 }
 
-// Only writes when the target actually changed, so the servo is not
-// continuously commanded to a position it already holds.
-void moveTo(int angle) {
-  angle = constrain(angle, 0, 180);
-  if (angle == currentAngle) {
+// Walk the servo to the target a step at a time so it travels at a controlled
+// speed instead of lunging. A servo has no speed control of its own: commanding
+// a distant angle makes it go there as fast as it can, so slow motion means
+// commanding a series of nearby angles.
+void moveTo(int target) {
+  target = constrain(target, 0, 180);
+  if (target == currentAngle) {
     return;
   }
-  servo.write(angle);
-  currentAngle = angle;
+
+  // On the first move there is no known starting angle to sweep from, so just
+  // command the position and let the servo find it.
+  if (currentAngle < 0) {
+    servo.write(target);
+    currentAngle = target;
+    return;
+  }
+
+  int step = (target > currentAngle) ? SWEEP_STEP_DEG : -SWEEP_STEP_DEG;
+  while (currentAngle != target) {
+    if (abs(target - currentAngle) < SWEEP_STEP_DEG) {
+      currentAngle = target;         // final partial step
+    } else {
+      currentAngle += step;
+    }
+    servo.write(currentAngle);
+    delay(SWEEP_STEP_DELAY_MS);
+  }
 }
 
 void setup() {
@@ -141,11 +178,26 @@ void loop() {
   }
 #else
   // Trip above TRIP_VALUE + HYSTERESIS, release below TRIP_VALUE - HYSTERESIS.
-  // Between the two the state is left alone.
-  if (!tripped && level > TRIP_VALUE + HYSTERESIS) {
+  // Readings between the two are inconclusive and leave the state alone.
+  static uint8_t wetCount = 0;
+  static uint8_t dryCount = 0;
+
+  if (level > TRIP_VALUE + HYSTERESIS) {
+    dryCount = 0;
+    if (wetCount < CONFIRM_SAMPLES) {
+      wetCount++;
+    }
+  } else if (level < TRIP_VALUE - HYSTERESIS) {
+    wetCount = 0;
+    if (dryCount < CONFIRM_SAMPLES) {
+      dryCount++;
+    }
+  }
+
+  if (!tripped && wetCount >= CONFIRM_SAMPLES) {
     tripped = true;
     moveTo(ANGLE_AT_WET);
-  } else if (tripped && level < TRIP_VALUE - HYSTERESIS) {
+  } else if (tripped && dryCount >= CONFIRM_SAMPLES) {
     tripped = false;
     moveTo(ANGLE_AT_DRY);
   }
