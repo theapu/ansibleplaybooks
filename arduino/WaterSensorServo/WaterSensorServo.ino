@@ -11,17 +11,22 @@
  *   HW-038  +  -> D7            (see SENSOR_POWER_PIN note below)
  *   HW-038  -  -> GND
  *   Servo signal (orange/yellow) -> D9
- *   Servo V+     (red)           -> external 5V supply, NOT the Arduino 5V pin
- *   Servo GND    (brown/black)   -> supply GND, tied to Arduino GND
+ *   Servo V+     (red)           -> Arduino 5V (small servos only, see below)
+ *   Servo GND    (brown/black)   -> GND
  *
  * Powering the sensor from a digital pin instead of 5V lets the sketch keep it
  * off between samples. Constant DC across the traces electroplates them away
  * within days of continuous immersion; duty-cycling it makes the board last.
  * Wire + straight to 5V and set SENSOR_POWER_PIN to -1 if you prefer.
  *
- * A servo can pull far more than the USB/regulator can supply. Powering it
- * from the Arduino's 5V pin causes brownouts that look like random sensor
- * noise. Use a separate supply and share the ground.
+ * A micro servo such as an SG90 driving a light load runs fine off the Arduino
+ * 5V pin, provided the board is fed from a decent USB supply rather than a
+ * laptop port. Fit a 470-1000uF electrolytic across the servo's V+ and GND,
+ * close to the servo, with a 100nF ceramic in parallel: it supplies the startup
+ * inrush locally instead of sagging the 5V rail. That rail is also the ADC
+ * reference, so a sagging rail shifts the very readings that position the
+ * servo. Anything larger (MG996R and friends, ~2.5A stalled) needs its own 5V
+ * supply with the ground tied to the Arduino's.
  *
  * Two behaviours, chosen with MODE below:
  *   MODE_PROPORTIONAL - servo angle follows the water level continuously,

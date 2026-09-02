@@ -21,11 +21,11 @@ It works as a rain detector too — droplets bridging the traces raise the readi
 | `+`    | `D7`    |
 | `-`    | `GND`   |
 
-| Servo          | Connection                              |
-| -------------- | --------------------------------------- |
-| signal (yellow)| `D9`                                    |
-| V+ (red)       | external 5V supply — **not** the Arduino 5V pin |
-| GND (brown)    | supply GND, tied to Arduino GND         |
+| Servo           | Connection |
+| --------------- | ---------- |
+| signal (yellow) | `D9`       |
+| V+ (red)        | `5V` (small servos only — see below) |
+| GND (brown)     | `GND`      |
 
 Two things worth doing rather than the obvious shortcut:
 
@@ -33,9 +33,27 @@ Two things worth doing rather than the obvious shortcut:
   electroplates them away within days of immersion. The sketch powers the sensor
   only for the few milliseconds it takes to read. If you would rather wire `+`
   to `5V`, set `SENSOR_POWER_PIN` to `-1`.
-- **Give the servo its own supply.** Under load it draws more than the Arduino's
-  regulator can deliver, and the resulting brownouts look like random sensor
-  noise. Share the ground between the two supplies.
+- **Decouple the servo.** An SG90 turning a light load runs fine off the 5V pin,
+  as long as the board is fed from a proper USB supply rather than a laptop
+  port. Fit a 470–1000µF electrolytic across the servo's V+ and GND, close to
+  the servo, with a 100nF ceramic in parallel — it supplies the startup inrush
+  locally instead of sagging the 5V rail. That rail is the ADC reference too, so
+  a sagging rail shifts the very readings that position the servo, and the noise
+  looks like a flaky sensor.
+
+## Servo current
+
+| Servo         | Idle  | Moving, no load | Stall / inrush     |
+| ------------- | ----- | --------------- | ------------------ |
+| SG90 (micro)  | ~10mA | 100–250mA       | ~700mA, >1A spikes |
+| MG996R        | ~10mA | 500mA+          | ~2.5A              |
+
+The 5V pin can supply roughly 500mA on USB (shared with the board itself), less
+if you power the Arduino through the barrel jack, since that runs through a
+linear regulator that will thermal-cycle under load. An SG90 fits inside that
+budget; anything geared or metal-geared does not and needs its own supply.
+
+Never power a servo from a digital pin — those source about 20mA.
 
 ## Calibrating
 
