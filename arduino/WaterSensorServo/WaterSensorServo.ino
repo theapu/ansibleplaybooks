@@ -10,9 +10,10 @@
  *   HW-038  S  -> A0            (analog in, NOT a digital pin)
  *   HW-038  +  -> D7            (see SENSOR_POWER_PIN note below)
  *   HW-038  -  -> GND
- *   Servo signal (orange/yellow) -> D9
- *   Servo V+     (red)           -> Arduino 5V (small servos only, see below)
- *   Servo GND    (brown/black)   -> GND
+ *   Servo signal (orange/yellow/white) -> D9
+ *   Servo V+     (red, always the middle wire) -> Arduino 5V (small servos
+ *                                     only, see below)
+ *   Servo GND    (brown/black/grey)   -> GND
  *
  * Powering the sensor from a digital pin instead of 5V lets the sketch keep it
  * off between samples. Constant DC across the traces electroplates them away

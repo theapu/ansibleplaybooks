@@ -21,11 +21,15 @@ It works as a rain detector too — droplets bridging the traces raise the readi
 | `+`    | `D7`    |
 | `-`    | `GND`   |
 
-| Servo           | Connection |
-| --------------- | ---------- |
-| signal (yellow) | `D9`       |
-| V+ (red)        | `5V` (small servos only — see below) |
-| GND (brown)     | `GND`      |
+| Servo | Wire colour | Connection |
+| ----- | ----------- | ---------- |
+| signal | orange / yellow / white (edge) | `D9` |
+| V+     | red (always the middle wire)   | `5V` (small servos only — see below) |
+| GND    | brown / black / grey (edge)    | `GND` |
+
+Red is always the middle wire on a 3-wire servo lead; the two outer wires are
+signal and ground, ground being the darker of them. Check the connector against
+that before plugging it in — swapping red and ground can destroy the servo.
 
 Two things worth doing rather than the obvious shortcut:
 
