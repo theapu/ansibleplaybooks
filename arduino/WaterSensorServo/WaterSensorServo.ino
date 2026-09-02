@@ -30,17 +30,19 @@
  * supply with the ground tied to the Arduino's.
  *
  * Two behaviours, chosen with MODE below:
+ *   MODE_THRESHOLD    - (default) the servo sweeps the full ANGLE_AT_DRY ->
+ *                       ANGLE_AT_WET travel the moment water is detected, and
+ *                       back again once the sensor dries. For a valve, a lid,
+ *                       or anything else that is simply open or shut.
  *   MODE_PROPORTIONAL - servo angle follows the water level continuously,
  *                       e.g. a gauge needle.
- *   MODE_THRESHOLD    - servo snaps between two positions when the level
- *                       crosses a threshold, e.g. a valve or a lid.
  */
 
 #include <Servo.h>
 
 #define MODE_PROPORTIONAL 0
 #define MODE_THRESHOLD    1
-#define MODE MODE_PROPORTIONAL
+#define MODE MODE_THRESHOLD
 
 const uint8_t SENSOR_PIN       = A0;
 const uint8_t SERVO_PIN        = 9;
@@ -61,9 +63,11 @@ const int ANGLE_AT_WET = 180;
 const int ANGLE_DEADBAND = 2;
 
 // Threshold mode only: the level that trips the servo, and the dead band that
-// keeps it from chattering when the reading sits right on the line.
-const int TRIP_VALUE  = 300;
-const int HYSTERESIS  = 40;
+// keeps it from chattering when the reading sits right on the line. Set
+// TRIP_VALUE just above whatever the sensor reads when dry - check the serial
+// monitor, since a dry board is rarely a clean zero.
+const int TRIP_VALUE  = 150;
+const int HYSTERESIS  = 30;
 
 const unsigned long SAMPLE_INTERVAL_MS = 500;
 const unsigned long SENSOR_SETTLE_MS   = 10;   // let the sensor stabilise after power-up

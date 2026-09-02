@@ -70,10 +70,19 @@ conductivity, so recalibrate if you switch from tap water to anything else.
 
 Set `MODE` at the top of the sketch:
 
-- `MODE_PROPORTIONAL` (default) — the servo angle follows the water level
-  continuously, e.g. a gauge needle.
-- `MODE_THRESHOLD` — the servo snaps between two positions when the level
-  crosses `TRIP_VALUE`, e.g. a valve or a lid. `HYSTERESIS` sets the dead band
-  that stops it chattering when the reading sits on the line.
+- `MODE_THRESHOLD` (default) — the servo sweeps its full `ANGLE_AT_DRY` →
+  `ANGLE_AT_WET` travel (0° → 180° as shipped) as soon as water is detected, and
+  returns once the sensor dries. For a valve, a lid, or anything else that is
+  simply open or shut. `TRIP_VALUE` is the level that fires it; `HYSTERESIS` is
+  the dead band that stops it chattering when the reading sits on the line, so
+  it trips above `TRIP_VALUE + HYSTERESIS` and releases below
+  `TRIP_VALUE - HYSTERESIS`.
+- `MODE_PROPORTIONAL` — the servo angle follows the water level continuously,
+  e.g. a gauge needle. `DRY_VALUE`/`WET_VALUE` set the range that maps onto the
+  servo's travel.
+
+In threshold mode, set `TRIP_VALUE` just above the dry reading from the serial
+monitor — a dry board is rarely a clean zero, and a trip point too close to it
+will fire on humidity alone.
 
 Swap `ANGLE_AT_DRY` and `ANGLE_AT_WET` to reverse the direction of rotation.
